@@ -1,6 +1,11 @@
 # DevArc — Database Design & ER Model
 
-> PostgreSQL | Phase 1 | Production-Ready Schema
+> PostgreSQL (Supabase) | Phase 1 | Production-Ready Schema
+
+> Database Engine: PostgreSQL (managed via Supabase)
+
+DevArc uses Supabase managed PostgreSQL instead of a local PostgreSQL installation.
+This keeps development simple and avoids local database configuration issues.
 
 ---
 
