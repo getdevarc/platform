@@ -26,3 +26,18 @@ exports.getSubmissions = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+exports.submitCode = async (req, res) => {
+  try {
+    const submission = await submissionService.submitCode({
+      userId: req.user.userId,
+      problemId: req.body.problemId,
+      code: req.body.code,
+      language: req.body.language
+    });
+
+    res.json(submission);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
