@@ -1,0 +1,155 @@
+openapi: 3.0.0
+info:
+  title: DevArc API
+  description: AI-powered developer career platform backend APIs
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:5050
+    description: Local development server
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+paths:
+
+  /health:
+    get:
+      summary: Health check endpoint
+      responses:
+        "200":
+          description: API running
+          content:
+            application/json:
+              example:
+                status: DevArc API running
+
+  /auth/register:
+    post:
+      summary: Register new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              name: Aman
+              email: aman@test.com
+              password: "123456"
+      responses:
+        "200":
+          description: User registered
+          content:
+            application/json:
+              example:
+                id: uuid
+                name: Aman
+                email: aman@test.com
+
+  /auth/login:
+    post:
+      summary: Login user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              email: aman@test.com
+              password: "123456"
+      responses:
+        "200":
+          description: JWT token returned
+          content:
+            application/json:
+              example:
+                token: JWT_TOKEN
+
+  /auth/me:
+    get:
+      summary: Get current logged in user
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              example:
+                userId: c43556f4-4685-4fe6-ad44-2450ac6934eb
+
+  /problems:
+    get:
+      summary: Get list of coding problems
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: List of problems
+          content:
+            application/json:
+              example:
+                - id: uuid
+                  title: Two Sum
+                  difficulty: easy
+
+  /problems/{id}:
+    get:
+      summary: Get problem details
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Problem details
+          content:
+            application/json:
+              example:
+                id: uuid
+                title: Two Sum
+                difficulty: easy
+                description: Given an array of integers...
+
+  /submissions:
+    post:
+      summary: Submit code for a problem
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              problemId: 1689144e-3886-4779-acc8-baf7702973a3
+              code: console.log("hello world")
+              language: javascript
+      responses:
+        "200":
+          description: Submission stored
+          content:
+            application/json:
+              example:
+                id: submission_id
+                status: pending
+
+    get:
+      summary: Get user submissions
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: List of submissions
+          content:
+            application/json:
+              example:
+                - id: submission_id
+                  problem_id: uuid
+                  language: javascript
+                  status: pending
