@@ -21,3 +21,15 @@ exports.getUserSubmissions = async (userId) => {
 
   return result.rows;
 };
+
+exports.updateStatus = async (id, status) => {
+  const result = await db.query(
+    `UPDATE submissions
+     SET status=$1
+     WHERE id=$2
+     RETURNING *`,
+    [status, id]
+  );
+
+  return result.rows[0];
+};

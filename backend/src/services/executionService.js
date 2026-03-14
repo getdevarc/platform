@@ -9,16 +9,16 @@ const headers = {
   "X-RapidAPI-Host": "judge0-ce.p.rapidapi.com"
 };
 
-exports.executeCode = async (source_code, language_id) => {
+exports.executeCode = async (source_code, language_id, stdin) => {
   const response = await axios.post(
     JUDGE0_URL,
     {
       source_code,
       language_id,
-      stdin: ""
+      stdin
     },
     { headers }
   );
 
   return response.data;
-};
+}; 
