@@ -127,3 +127,61 @@ Focus on reviewing the existing code.
 
   return review;
 };
+
+// -------- Generate Interview Question --------
+exports.generateInterviewQuestion = async () => {
+
+  const prompt = `
+You are a senior software engineer conducting a coding interview.
+
+Generate one DSA interview question.
+
+Include:
+- Problem title
+- Description
+- Example
+`;
+
+  const response = await groq.chat.completions.create({
+    model: "llama-3.1-8b-instant",
+    messages: [
+      { role: "system", content: "You are a technical interviewer." },
+      { role: "user", content: prompt }
+    ]
+  });
+
+  return response.choices[0].message.content;
+};
+
+// -------- Evaluate Interview Answer --------
+exports.evaluateInterviewAnswer = async (question, userCode) => {
+
+  const prompt = `
+You are a coding interviewer.
+
+Question:
+${question}
+
+Candidate Code:
+${userCode}
+
+Evaluate the answer.
+
+Return:
+
+Correctness:
+Time Complexity:
+Code Quality:
+Suggestions:
+`;
+
+  const response = await groq.chat.completions.create({
+    model: "llama-3.1-8b-instant",
+    messages: [
+      { role: "system", content: "You are a technical interviewer." },
+      { role: "user", content: prompt }
+    ]
+  });
+
+  return response.choices[0].message.content;
+};
