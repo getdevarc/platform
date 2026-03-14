@@ -185,3 +185,46 @@ Suggestions:
 
   return response.choices[0].message.content;
 };
+
+// -------- Generate Career Roadmap --------
+exports.generateCareerRoadmap = async (goal, experience, timeline, userId) => {
+
+  const prompt = `
+You are an AI career coach for software developers.
+
+User Goal:
+${goal}
+
+Experience Level:
+${experience}
+
+Timeline:
+${timeline}
+
+Generate a step-by-step roadmap including:
+
+Skills to learn
+Projects to build
+DSA topics to practice
+Interview preparation steps
+`;
+
+  const response = await groq.chat.completions.create({
+    model: "llama-3.1-8b-instant",
+    messages: [
+      { role: "system", content: "You are an AI career coach." },
+      { role: "user", content: prompt }
+    ]
+  });
+
+  const roadmap = response.choices[0].message.content;
+
+  await aiLogRepository.createLog({
+    userId,
+    problemId: null,
+    prompt,
+    response: roadmap
+  });
+
+  return roadmap;
+};
