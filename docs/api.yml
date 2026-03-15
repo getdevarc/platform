@@ -1,13 +1,51 @@
-openapi: 3.0.0
+openapi: 3.0.3
+
 info:
   title: DevArc API
-  description: AI-powered developer career platform backend APIs
+  description: |
+    AI-powered career copilot for developers.
+    
+    ## Authentication
+    Most endpoints require a Bearer JWT token in the `Authorization` header.
+    Obtain the token via `POST /auth/login`.
+    
+    ## Rate Limiting
+    AI endpoints (`/ai/*`) are rate-limited. Exceeding limits returns HTTP 429.
+    
+    ## Response Format
+    All responses follow a consistent envelope:
+    ```json
+    { "success": true/false, "data": {...} | null, "error": "message" | null }
+    ```
   version: 1.0.0
+  contact:
+    name: DevArc
+    url: https://getdevarc.com
 
+# ─── SERVERS ────────────────────────────────────────────────────────────────
+# To switch environments, just change the url here (or add more server entries)
 servers:
   - url: http://localhost:5050
-    description: Local development server
+    description: Local Development
+  # - url: https://api.getdevarc.com
+  #   description: Production
 
+# ─── TAGS (grouping in Swagger UI) ──────────────────────────────────────────
+tags:
+  - name: Health
+    description: Service health check
+  - name: Auth
+    description: Register and login
+  - name: Submissions
+    description: Code submission and history
+  - name: AI
+    description: AI-powered hints, explanations, and code review (rate-limited)
+  - name: Interview
+    description: AI mock interview session
+  - name: Career
+    description: Career roadmap generation
+
+# ─── REUSABLE COMPONENTS ────────────────────────────────────────────────────
 components:
   securitySchemes:
     BearerAuth:
@@ -15,141 +53,434 @@ components:
       scheme: bearer
       bearerFormat: JWT
 
+  schemas:
+    SuccessEnvelope:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          nullable: true
+        error:
+          type: string
+          nullable: true
+          example: null
+
+    ErrorEnvelope:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        data:
+          type: object
+          nullable: true
+          example: null
+        error:
+          type: string
+          example: "Error message here"
+
+    # ── Auth ──
+    RegisterRequest:
+      type: object
+      required: [name, email, password]
+      properties:
+        name:
+          type: string
+          example: Aman
+        email:
+          type: string
+          format: email
+          example: aman@test.com
+        password:
+          type: string
+          minLength: 6
+          example: "123456"
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: aman@test.com
+        password:
+          type: string
+          example: "123456"
+
+    # ── Submissions ──
+    SubmitCodeRequest:
+      type: object
+      required: [problemId, code, language]
+      properties:
+        problemId:
+          type: string
+          format: uuid
+          example: 1689144e-3886-4779-acc8-baf7702973a3
+        code:
+          type: string
+          example: "function twoSum(nums,target){return [0,1]}"
+        language:
+          type: string
+          enum: [javascript, python, java, cpp]
+          example: javascript
+
+    # ── AI ──
+    AIProblemRequest:
+      type: object
+      required: [problemId, userCode]
+      properties:
+        problemId:
+          type: string
+          format: uuid
+          example: 1689144e-3886-4779-acc8-baf7702973a3
+        userCode:
+          type: string
+          example: "function twoSum(nums,target){return [0,1]}"
+
+    # ── Interview ──
+    InterviewAnswerRequest:
+      type: object
+      required: [question, userCode]
+      properties:
+        question:
+          type: string
+          example: "Two Sum problem..."
+        userCode:
+          type: string
+          example: "function twoSum(nums,target){return [0,1]}"
+
+    # ── Career ──
+    CareerRoadmapRequest:
+      type: object
+      required: [goal, experience, timeline]
+      properties:
+        goal:
+          type: string
+          example: Become Backend Engineer
+        experience:
+          type: string
+          enum: [Beginner, Intermediate, Advanced]
+          example: Beginner
+        timeline:
+          type: string
+          example: 6 months
+
+# ─── PATHS ──────────────────────────────────────────────────────────────────
 paths:
 
+  # ── Health ────────────────────────────────────────────────────────────────
   /health:
     get:
-      summary: Health check endpoint
+      tags: [Health]
+      summary: Health check
+      operationId: healthCheck
       responses:
         "200":
-          description: API running
+          description: API is running
           content:
             application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
               example:
-                status: DevArc API running
+                success: true
+                data:
+                  status: "DevArc API running"
+                error: null
 
+  # ── Auth ──────────────────────────────────────────────────────────────────
   /auth/register:
     post:
-      summary: Register new user
+      tags: [Auth]
+      summary: Register a new user
+      operationId: registerUser
       requestBody:
         required: true
         content:
           application/json:
-            example:
-              name: Aman
-              email: aman@test.com
-              password: "123456"
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
       responses:
-        "200":
-          description: User registered
+        "201":
+          description: User registered successfully
           content:
             application/json:
               example:
-                id: uuid
-                name: Aman
-                email: aman@test.com
+                success: true
+                data:
+                  id: "uuid"
+                  name: Aman
+                  email: aman@test.com
+                error: null
+        "400":
+          description: Validation error or email already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
 
   /auth/login:
     post:
-      summary: Login user
+      tags: [Auth]
+      summary: Login and get JWT token
+      operationId: loginUser
       requestBody:
         required: true
         content:
           application/json:
-            example:
-              email: aman@test.com
-              password: "123456"
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
       responses:
         "200":
-          description: JWT token returned
+          description: Login successful
           content:
             application/json:
               example:
-                token: JWT_TOKEN
-
-  /auth/me:
-    get:
-      summary: Get current logged in user
-      security:
-        - BearerAuth: []
-      responses:
-        "200":
-          description: Current user
+                success: true
+                data:
+                  token: "JWT_TOKEN"
+                error: null
+        "401":
+          description: Invalid credentials
           content:
             application/json:
-              example:
-                userId: c43556f4-4685-4fe6-ad44-2450ac6934eb
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
 
-  /problems:
-    get:
-      summary: Get list of coding problems
-      security:
-        - BearerAuth: []
-      responses:
-        "200":
-          description: List of problems
-          content:
-            application/json:
-              example:
-                - id: uuid
-                  title: Two Sum
-                  difficulty: easy
-
-  /problems/{id}:
-    get:
-      summary: Get problem details
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: Problem details
-          content:
-            application/json:
-              example:
-                id: uuid
-                title: Two Sum
-                difficulty: easy
-                description: Given an array of integers...
-
+  # ── Submissions ───────────────────────────────────────────────────────────
   /submissions:
     post:
+      tags: [Submissions]
       summary: Submit code for a problem
+      operationId: submitCode
       security:
         - BearerAuth: []
       requestBody:
         required: true
         content:
           application/json:
-            example:
-              problemId: 1689144e-3886-4779-acc8-baf7702973a3
-              code: console.log("hello world")
-              language: javascript
+            schema:
+              $ref: "#/components/schemas/SubmitCodeRequest"
       responses:
         "200":
-          description: Submission stored
+          description: Code submitted and evaluated
           content:
             application/json:
               example:
-                id: submission_id
-                status: pending
+                success: true
+                data:
+                  submissionId: "uuid"
+                  status: accepted
+                error: null
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
 
     get:
-      summary: Get user submissions
+      tags: [Submissions]
+      summary: Get all submissions for the logged-in user
+      operationId: getUserSubmissions
       security:
         - BearerAuth: []
       responses:
         "200":
-          description: List of submissions
+          description: List of user submissions
           content:
             application/json:
               example:
-                - id: submission_id
-                  problem_id: uuid
-                  language: javascript
-                  status: pending
+                success: true
+                data:
+                  - id: "uuid"
+                    problem_id: "uuid"
+                    status: accepted
+                error: null
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  # ── AI ────────────────────────────────────────────────────────────────────
+  /ai/hint:
+    post:
+      tags: [AI]
+      summary: Get an AI hint for a problem
+      operationId: getAIHint
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AIProblemRequest"
+      responses:
+        "200":
+          description: AI hint returned
+          content:
+            application/json:
+              example:
+                success: true
+                data:
+                  hint: "Try using a hash map to store numbers you've seen..."
+                error: null
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              example:
+                success: false
+                data: null
+                error: "Too many AI requests. Please try again later."
+
+  /ai/explain:
+    post:
+      tags: [AI]
+      summary: Get an AI explanation of the solution
+      operationId: getAIExplanation
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AIProblemRequest"
+      responses:
+        "200":
+          description: AI explanation returned
+          content:
+            application/json:
+              example:
+                success: true
+                data:
+                  explanation: "Algorithm: Hash Map..."
+                error: null
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              example:
+                success: false
+                data: null
+                error: "Too many AI requests. Please try again later."
+
+  /ai/review:
+    post:
+      tags: [AI]
+      summary: Get an AI code review
+      operationId: getAIReview
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AIProblemRequest"
+      responses:
+        "200":
+          description: AI code review returned
+          content:
+            application/json:
+              example:
+                success: true
+                data:
+                  review: "Your solution works but can be optimized..."
+                error: null
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              example:
+                success: false
+                data: null
+                error: "Too many AI requests. Please try again later."
+
+  # ── Interview ─────────────────────────────────────────────────────────────
+  /interview/start:
+    post:
+      tags: [Interview]
+      summary: Start a new mock interview session
+      operationId: startInterview
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Interview question generated
+          content:
+            application/json:
+              example:
+                success: true
+                data:
+                  question: "Two Sum problem..."
+                error: null
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /interview/answer:
+    post:
+      tags: [Interview]
+      summary: Submit answer for the mock interview question
+      operationId: submitInterviewAnswer
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InterviewAnswerRequest"
+      responses:
+        "200":
+          description: Interview feedback returned
+          content:
+            application/json:
+              example:
+                success: true
+                data:
+                  feedback: "The candidate solved the problem correctly..."
+                error: null
+
+  # ── Career ────────────────────────────────────────────────────────────────
+  /career/roadmap:
+    post:
+      tags: [Career]
+      summary: Generate a personalized career roadmap
+      operationId: generateCareerRoadmap
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CareerRoadmapRequest"
+      responses:
+        "200":
+          description: Career roadmap generated
+          content:
+            application/json:
+              example:
+                success: true
+                data:
+                  roadmap: "Month 1: Learn JavaScript fundamentals..."
+                error: null
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
