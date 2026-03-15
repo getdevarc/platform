@@ -2,6 +2,7 @@ const submissionRepository = require("../repositories/submissionRepository");
 const problemRepository = require("../repositories/problemRepository");
 const testCaseService = require("./testCaseService");
 const languages = require("../constants/languages");
+const logger = require("../config/logger");
 
 exports.submitCode = async (data) => {
 
@@ -25,6 +26,9 @@ exports.submitCode = async (data) => {
     submission.id,
     result.status
   );
+
+  logger.info("Code submitted for problem", { problemId: data.problemId, submissionId: submission.id });
+
 
   return {
     submissionId: submission.id,
