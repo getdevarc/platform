@@ -1,30 +1,27 @@
 const aiService = require("../services/aiService");
 const problemRepository = require("../repositories/problemRepository");
+const asyncHandler = require("../utils/asyncHandler");
 
-exports.getHint = async (req, res) => {
+exports.getHint = asyncHandler(async (req, res) => {
 
-    try {
+  const { problemId, userCode } = req.body;
 
-        const { problemId, userCode } = req.body;
+  const problem =
+    await problemRepository.getProblemById(problemId);
 
-        const problem =
-            await problemRepository.getProblemById(problemId);
+  const hint =
+    await aiService.generateHint(
+      problem,
+      userCode,
+      req.user.userId
+    );
 
-        const hint =
-            await aiService.generateHint(problem, userCode, req.user.userId);
+  res.json({
+    success: true,
+    data: hint
+  });
 
-        res.json({
-            hint
-        });
-
-    } catch (error) {
-
-        res.status(500).json({
-            error: error.message
-        });
-
-    }
-};
+});
 
 exports.getExplanation = async (req, res) => {
 

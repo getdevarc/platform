@@ -7,6 +7,7 @@ const submissionRoutes = require("./routes/submissionRoutes");
 const aiRoutes = require("./routes/aiRoutes");
 const interviewRoutes = require("./routes/interviewRoutes");
 const careerRoutes = require("./routes/careerRoutes");
+const errorHandler = require("./middleware/errorHandler");
 
 const app = express();
 
@@ -23,5 +24,6 @@ app.use("/submissions", submissionRoutes);
 app.use("/ai", aiRoutes);
 app.use("/interview", interviewRoutes);
 app.use("/career", careerRoutes);
+app.use(errorHandler);
 
 module.exports = app;
