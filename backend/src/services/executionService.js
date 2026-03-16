@@ -8,8 +8,9 @@ const headers = {
   "X-RapidAPI-Key": process.env.JUDGE0_API_KEY,
   "X-RapidAPI-Host": "judge0-ce.p.rapidapi.com"
 };
+const eventService = require("./eventService");
 
-exports.executeCode = async (source_code, language_id, stdin) => {
+exports.executeCode = async (source_code, language_id, stdin, sessionId) => {
   const response = await axios.post(
     JUDGE0_URL,
     {
@@ -19,6 +20,13 @@ exports.executeCode = async (source_code, language_id, stdin) => {
     },
     { headers }
   );
+
+  if (sessionId) {
+    await eventService.logEvent(
+      sessionId,
+      "code_run"
+    );
+  }
 
   return response.data;
 }; 

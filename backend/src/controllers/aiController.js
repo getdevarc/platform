@@ -4,7 +4,7 @@ const asyncHandler = require("../utils/asyncHandler");
 
 exports.getHint = asyncHandler(async (req, res) => {
 
-  const { problemId, userCode } = req.body;
+  const { problemId, userCode, sessionId } = req.body;
 
   const problem =
     await problemRepository.getProblemById(problemId);
@@ -13,7 +13,8 @@ exports.getHint = asyncHandler(async (req, res) => {
     await aiService.generateHint(
       problem,
       userCode,
-      req.user.userId
+      req.user.userId,
+      sessionId
     );
 
   res.json({

@@ -10,6 +10,7 @@ const interviewRoutes = require("./routes/interviewRoutes");
 const careerRoutes = require("./routes/careerRoutes");
 const errorHandler = require("./middleware/errorHandler");
 const logger = require("./config/logger");
+const sessionRoutes = require("./routes/sessionRoutes");
 
 const app = express();
 
@@ -28,5 +29,6 @@ app.use("/ai", aiRoutes);
 app.use("/interview", interviewRoutes);
 app.use("/career", careerRoutes);
 app.use(errorHandler);
+app.use("/sessions", sessionRoutes);
 
 module.exports = app;

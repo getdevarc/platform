@@ -1,5 +1,6 @@
 const Groq = require("groq-sdk");
 const aiLogRepository = require("../repositories/aiLogRepository");
+const eventService = require("./eventService");
 
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY
@@ -35,6 +36,13 @@ Give a helpful hint that guides the user toward solving the problem.
     prompt,
     response: hint
   });
+
+  if (sessionId) {
+    await eventService.logEvent(
+      sessionId,
+      "ai_hint"
+    );
+  }
 
   return hint;
 };

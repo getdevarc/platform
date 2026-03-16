@@ -3,6 +3,7 @@ const problemRepository = require("../repositories/problemRepository");
 const testCaseService = require("./testCaseService");
 const languages = require("../constants/languages");
 const logger = require("../config/logger");
+const eventService = require("./eventService");
 
 exports.submitCode = async (data) => {
 
@@ -19,8 +20,16 @@ exports.submitCode = async (data) => {
   const result = await testCaseService.runTestCases(
     data.code,
     languageId,
-    problem.test_cases
+    problem.test_cases,
+    data.sessionId
   );
+
+  if (data.sessionId) {
+  await eventService.logEvent(
+    data.sessionId,
+    "submission"
+  );
+}
 
   await submissionRepository.updateStatus(
     submission.id,
