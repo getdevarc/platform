@@ -4,6 +4,7 @@ const testCaseService = require("./testCaseService");
 const languages = require("../constants/languages");
 const logger = require("../config/logger");
 const eventService = require("./eventService");
+const sessionService = require("./sessionService");
 
 exports.submitCode = async (data) => {
 
@@ -25,11 +26,15 @@ exports.submitCode = async (data) => {
   );
 
   if (data.sessionId) {
-  await eventService.logEvent(
-    data.sessionId,
-    "submission"
-  );
-}
+    await eventService.logEvent(
+      data.sessionId,
+      "submission"
+    );
+    
+    if (result.status === "accepted") {
+      await sessionService.endSession(data.sessionId);
+    }
+  }
 
   await submissionRepository.updateStatus(
     submission.id,

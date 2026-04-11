@@ -35,6 +35,8 @@ Outcome:
 
 Developers can create accounts, solve coding problems, and track their progress.
 
+Developers can create accounts, solve coding problems, and track their progress.
+
 ---
 
 # Phase 2 — AI Learning Features
@@ -63,10 +65,12 @@ Developers receive intelligent feedback while solving problems.
 
 Focus: Simulate real technical interview environments.
 
-Key features:
+Key advantages:
 
-- timed problem solving sessions
-- interview simulation mode
+- **Solve Insights**: AI analysis of the *way* you solve, not just the result.
+- **AI-assisted learning**: Mentorship built into the IDE.
+- **Progressive Guidance**: Hints that guide you without spoiling.
+- **Integrated career development**: Personalized roadmaps based on output.
 - difficulty progression
 - company-specific preparation tracks
 
@@ -144,4 +148,8 @@ DevArc will follow these principles:
 
 # Current Status
 
-DevArc is currently in the **foundation stage**, focusing on repository setup, architecture planning, and core platform development.
+DevArc has successfully completed the **Foundation & IDE Core** phases. 
+- **Backend Hardening**: AI services, session tracking, and standardized APIs are live.
+- **IDE Experience**: Monaco integrated, AI Mentor Chat active, and Solve Insights UI implemented.
+
+Next: **Phase 2 — Platform Foundation & Auth**.

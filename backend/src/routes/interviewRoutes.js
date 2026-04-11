@@ -5,6 +5,7 @@ const interviewController = require("../controllers/interviewController");
 const authMiddleware = require("../middleware/authMiddleware");
 
 router.post("/start", authMiddleware, interviewController.startInterview);
-router.post("/answer", authMiddleware, interviewController.submitAnswer);
+router.post("/message", authMiddleware, interviewController.sendMessage);
+router.post("/finish", authMiddleware, interviewController.submitInterview);
 
 module.exports = router;

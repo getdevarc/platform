@@ -137,9 +137,10 @@ into a single developer growth platform.
 
 Key advantages:
 
-- AI-assisted learning
-- structured skill progression
-- integrated career development
+- **Solve Insights**: AI analysis of the *way* you solve, not just the result.
+- **AI-assisted learning**: Mentorship built into the IDE.
+- **Progressive Guidance**: Hints that guide you without spoiling.
+- **Integrated career development**: Personalized roadmaps based on output.
 
 ---
 

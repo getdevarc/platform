@@ -10,4 +10,10 @@ router.post(
   sessionController.startSession
 );
 
+router.get(
+  "/:sessionId/insights",
+  authMiddleware,
+  sessionController.getSessionInsights
+);
+
 module.exports = router;

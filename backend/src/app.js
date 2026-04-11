@@ -11,6 +11,7 @@ const careerRoutes = require("./routes/careerRoutes");
 const errorHandler = require("./middleware/errorHandler");
 const logger = require("./config/logger");
 const sessionRoutes = require("./routes/sessionRoutes");
+const analyticsRoutes = require("./routes/analyticsRoutes");
 
 const app = express();
 
@@ -30,5 +31,6 @@ app.use("/interview", interviewRoutes);
 app.use("/career", careerRoutes);
 app.use(errorHandler);
 app.use("/sessions", sessionRoutes);
+app.use("/analytics", analyticsRoutes);
 
 module.exports = app;

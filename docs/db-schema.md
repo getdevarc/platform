@@ -145,6 +145,34 @@ Audit log for every AI interaction. Used for debugging prompt quality, tracking 
 | `response` | `TEXT` | The LLM response stored for auditing |
 | `created_at` | `TIMESTAMP` | `DEFAULT NOW()` \| `NOT NULL` |
 
+---
+
+### Table: `solve_sessions`
+
+Tracks a user's attempt at a problem. Automatically ends on success.
+
+| Column | Type | Constraint / Note |
+|---|---|---|
+| `id` | `UUID` | `PRIMARY KEY` \| `DEFAULT gen_random_uuid()` |
+| `user_id` | `UUID` | `REFERENCES users(id)` |
+| `problem_id` | `UUID` | `REFERENCES problems(id)` |
+| `status` | `VARCHAR(20)` | `active / completed` |
+| `created_at` | `TIMESTAMP` | `DEFAULT NOW()` |
+
+---
+
+### Table: `solve_events`
+
+Logs every significant user/AI action during a session for timeline analysis.
+
+| Column | Type | Constraint / Note |
+|---|---|---|
+| `id` | `UUID` | `PRIMARY KEY` \| `DEFAULT gen_random_uuid()` |
+| `session_id` | `UUID` | `REFERENCES solve_sessions(id)` |
+| `event_type` | `VARCHAR(50)` | `problem_opened`, `ai_hint`, `submission`, etc. |
+| `metadata` | `JSONB` | Stores event-specific data (e.g., hint level) |
+| `created_at` | `TIMESTAMP` | `DEFAULT NOW()` |
+
 ```sql
 CREATE TABLE ai_logs (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),

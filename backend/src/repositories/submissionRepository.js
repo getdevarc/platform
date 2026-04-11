@@ -1,13 +1,13 @@
 const db = require("../config/db");
 
 exports.createSubmission = async (submission) => {
-  const { userId, problemId, code, language } = submission;
+  const { userId, problemId, code, language, score, penalty } = submission;
 
   const result = await db.query(
-    `INSERT INTO submissions (user_id, problem_id, code, language)
-     VALUES ($1,$2,$3,$4)
+    `INSERT INTO submissions (user_id, problem_id, code, language, score, penalty)
+     VALUES ($1,$2,$3,$4,$5,$6)
      RETURNING *`,
-    [userId, problemId, code, language]
+    [userId, problemId, code, language, score, penalty]
   );
 
   return result.rows[0];

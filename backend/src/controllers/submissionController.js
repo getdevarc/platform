@@ -1,43 +1,46 @@
 const submissionService = require("../services/submissionService");
+const asyncHandler = require("../utils/asyncHandler");
 
-exports.createSubmission = async (req, res) => {
-  try {
-    const submission = await submissionService.submitCode({
-      userId: req.user.userId,
-      problemId: req.body.problemId,
-      code: req.body.code,
-      language: req.body.language
-    });
+exports.createSubmission = asyncHandler(async (req, res) => {
+  const submission = await submissionService.submitCode({
+    userId: req.user.userId,
+    problemId: req.body.problemId,
+    code: req.body.code,
+    language: req.body.language,
+    sessionId: req.body.sessionId
+  });
 
-    res.json(submission);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
+  res.json({
+    success: true,
+    data: submission,
+    error: null
+  });
+});
 
-exports.getSubmissions = async (req, res) => {
-  try {
-    const submissions = await submissionService.getSubmissions(
-      req.user.userId
-    );
+exports.getSubmissions = asyncHandler(async (req, res) => {
+  const submissions = await submissionService.getSubmissions(
+    req.user.userId
+  );
 
-    res.json(submissions);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
+  res.json({
+    success: true,
+    data: submissions,
+    error: null
+  });
+});
 
-exports.submitCode = async (req, res) => {
-  try {
-    const submission = await submissionService.submitCode({
-      userId: req.user.userId,
-      problemId: req.body.problemId,
-      code: req.body.code,
-      language: req.body.language
-    });
+exports.submitCode = asyncHandler(async (req, res) => {
+  const submission = await submissionService.submitCode({
+    userId: req.user.userId,
+    problemId: req.body.problemId,
+    code: req.body.code,
+    language: req.body.language,
+    sessionId: req.body.sessionId
+  });
 
-    res.json(submission);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
+  res.json({
+    success: true,
+    data: submission,
+    error: null
+  });
+});

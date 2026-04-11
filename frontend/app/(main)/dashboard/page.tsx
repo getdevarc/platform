@@ -1,0 +1,268 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useAuthStore } from "@/store/useAuthStore";
+import { api, ApiResponse } from "@/lib/api";
+import { 
+  Card, 
+  CardContent, 
+  CardHeader, 
+  CardTitle, 
+  CardDescription 
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { 
+  CheckCircle2, 
+  Trophy, 
+  Flame, 
+  Target,
+  Sparkles,
+  TrendingUp,
+  BrainCircuit,
+  Clock,
+  ChevronRight,
+  Loader2
+} from "lucide-react";
+import { 
+  Radar, 
+  RadarChart, 
+  PolarGrid, 
+  PolarAngleAxis, 
+  PolarRadiusAxis, 
+  ResponsiveContainer 
+} from "recharts";
+import { cn } from "@/lib/utils";
+
+import { ClientOnly } from "@/components/shared/ClientOnly";
+
+interface DashboardData {
+  stats: { name: string; value: string; color: string }[];
+  recentInsights: any[];
+}
+
+export default function DashboardPage() {
+  const { user } = useAuthStore();
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Mock Radar Data for Mastery Visualization
+  const radarData = [
+    { subject: 'Arrays', A: 120, fullMark: 150 },
+    { subject: 'Strings', A: 98, fullMark: 150 },
+    { subject: 'DP', A: 86, fullMark: 150 },
+    { subject: 'Trees', A: 99, fullMark: 150 },
+    { subject: 'Graphs', A: 85, fullMark: 150 },
+    { subject: 'Sorting', A: 65, fullMark: 150 },
+  ];
+
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      try {
+        const res = await api.get<ApiResponse<DashboardData>>("/analytics/dashboard");
+        setData(res.data.data);
+      } catch (err) {
+        console.error("Failed to fetch dashboard", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDashboard();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="h-screen w-full flex flex-col items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+        <p className="text-sm font-medium text-zinc-500 animate-pulse">Syncing your progress...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex-1 overflow-y-auto bg-background p-8">
+      <div className="max-w-7xl mx-auto space-y-10">
+        
+        {/* Profile & Greeting */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold tracking-tight text-white">
+              Welcome Back, <span className="text-primary">{user?.name}</span>! 👋
+            </h1>
+            <p className="text-zinc-500 text-sm">
+              Your AI Mentor has analyzed 5 new patterns since your last session.
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+             <div className="px-4 py-2 rounded-xl bg-zinc-900 border border-white/5 flex items-center gap-3">
+                <Flame className="text-orange-500 h-5 w-5 fill-orange-500/20" />
+                <div>
+                   <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider leading-none">Streak</p>
+                   <p className="text-sm font-bold text-white">4 Days</p>
+                </div>
+             </div>
+             <div className="px-4 py-2 rounded-xl bg-primary/10 border border-primary/20 flex items-center gap-3 shadow-lg shadow-primary/5">
+                <Sparkles className="text-primary h-5 w-5" />
+                <div>
+                   <p className="text-[10px] text-primary font-bold uppercase tracking-wider leading-none">Level</p>
+                   <p className="text-sm font-bold text-primary">Mastery III</p>
+                </div>
+             </div>
+          </div>
+        </div>
+
+        {/* Core Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {data?.stats.map((stat, i) => {
+            const icons = [CheckCircle2, Flame, Target, Trophy];
+            const Icon = icons[i] || TrendingUp;
+            return (
+              <Card key={i} className="bg-zinc-900/30 border-white/5 backdrop-blur-sm group hover:border-primary/20 transition-all cursor-default">
+                <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                  <CardTitle className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em]">
+                    {stat.name}
+                  </CardTitle>
+                  <Icon size={16} className={cn(stat.color, "group-hover:scale-110 transition-transform")} />
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-end gap-2 text-white">
+                    <span className="text-3xl font-bold tracking-tighter">{stat.value}</span>
+                    <span className="text-[10px] text-zinc-600 font-bold mb-1.5">+2 this week</span>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+
+        {/* Analytics Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
+          {/* Recent Solve Insights Feed */}
+          <Card className="lg:col-span-2 bg-zinc-900/20 border-white/5 backdrop-blur-sm">
+            <CardHeader className="flex flex-row items-start justify-between">
+              <div>
+                <CardTitle className="text-white flex items-center gap-2">
+                   <BrainCircuit size={18} className="text-primary" />
+                   Solve Insights Feed
+                </CardTitle>
+                <CardDescription className="text-zinc-500">
+                  Detailed AI performance analysis from your recent sessions.
+                </CardDescription>
+              </div>
+              <Button variant="outline" size="sm" className="bg-zinc-900 border-white/10 text-xs font-bold uppercase tracking-wider rounded-lg h-7">
+                View All
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <ClientOnly>
+                {data?.recentInsights.length === 0 ? (
+                  <div className="h-64 flex flex-col items-center justify-center border border-dashed border-white/10 rounded-2xl bg-zinc-900/10 hover:bg-zinc-900/20 transition-all">
+                     <BrainCircuit className="h-10 w-10 text-zinc-700 mb-3" />
+                     <p className="text-zinc-600 uppercase text-[10px] font-bold tracking-[0.2em] mb-4">No Insights Yet</p>
+                     <Link href="/problems">
+                       <Button variant="outline" className="rounded-xl h-10 px-6 font-bold uppercase tracking-widest text-xs border-primary/20 text-primary hover:bg-primary/10 transition-all">
+                         Start Your First Challenge
+                       </Button>
+                     </Link>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {data?.recentInsights.map((insight: any) => (
+                      <div key={insight.id} className="p-4 rounded-2xl bg-zinc-900/50 border border-white/5 hover:border-primary/30 transition-all group">
+                        <div className="flex items-start justify-between mb-3">
+                           <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <h3 className="font-bold text-white group-hover:text-primary transition-colors">{insight.problem_title}</h3>
+                                <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-500 border-none text-[8px] h-4 uppercase tracking-[0.2em] px-1.5">
+                                   Completed
+                                </Badge>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                 <Badge variant="outline" className="text-[10px] bg-yellow-500/10 text-yellow-500 border-none">{insight.problem_difficulty}</Badge>
+                                 <span className="text-[10px] text-zinc-600 flex items-center gap-1">
+                                    <Clock size={10} /> {new Date(insight.created_at).toLocaleDateString()}
+                                 </span>
+                              </div>
+                           </div>
+                           <div className="flex items-center gap-2">
+                             <Link href={`/problems/${insight.problem_id}`}>
+                               <Button variant="ghost" size="sm" className="h-7 text-[8px] font-bold uppercase tracking-widest text-zinc-500 hover:text-white border border-white/5 hover:border-primary/20 rounded-lg group/btn">
+                                  <Sparkles size={10} className="mr-1 text-primary group-hover/btn:animate-pulse" />
+                                  Solve Again
+                               </Button>
+                             </Link>
+                             <Button variant="ghost" size="icon" className="text-zinc-600 group-hover:text-white transition-transform group-hover:translate-x-1">
+                                <ChevronRight size={18} />
+                             </Button>
+                           </div>
+                        </div>
+                        <p className="text-xs text-zinc-400 line-clamp-2 leading-relaxed mb-4">
+                          {insight.analysis_text}
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                           {insight.strengths.map((s: string, idx: number) => (
+                             <Badge key={idx} variant="secondary" className="bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border-none text-[10px] px-2 py-0">
+                                {s}
+                             </Badge>
+                           ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </ClientOnly>
+            </CardContent>
+          </Card>
+
+          {/* Mastery Charts */}
+          <div className="space-y-8">
+            <Card className="bg-zinc-900/20 border-white/5 backdrop-blur-sm overflow-hidden">
+              <CardHeader>
+                <CardTitle className="text-white text-sm uppercase tracking-[0.2em]">Skill Mastery</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0 flex justify-center">
+                <div className="h-[250px] w-full mt-[-20px]">
+                  <ClientOnly>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
+                        <PolarGrid stroke="#27272a" />
+                        <PolarAngleAxis dataKey="subject" tick={{ fill: '#71717a', fontSize: 10, fontWeight: 700 }} />
+                        <PolarRadiusAxis angle={30} domain={[0, 150]} tick={false} axisLine={false} />
+                        <Radar
+                          name="Mastery"
+                          dataKey="A"
+                          stroke="#0ea5e9"
+                          fill="#0ea5e9"
+                          fillOpacity={0.2}
+                        />
+                      </RadarChart>
+                    </ResponsiveContainer>
+                  </ClientOnly>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-zinc-900/20 border-white/5 backdrop-blur-sm p-6 relative overflow-hidden group border-none shadow-2xl">
+               {/* Background Glow */}
+               <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 blur-[60px] -z-10 group-hover:bg-primary/30 transition-all" />
+               <div className="flex items-center gap-4 mb-4">
+                  <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center text-primary-foreground shadow-lg shadow-primary/20">
+                     <Target />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-white uppercase tracking-wider">Join Career Cohort</h3>
+                    <p className="text-[10px] text-zinc-500">Expert guidance from ex-FAANG mentors.</p>
+                  </div>
+               </div>
+               <Button className="w-full bg-primary text-primary-foreground font-bold text-xs uppercase tracking-widest rounded-xl hover:bg-primary/90 transition-all">
+                  Join Private Access
+               </Button>
+            </Card>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

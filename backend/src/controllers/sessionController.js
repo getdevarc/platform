@@ -1,7 +1,8 @@
 const sessionService = require("../services/sessionService");
+const eventService = require("../services/eventService");
+const asyncHandler = require("../utils/asyncHandler");
 
-exports.startSession = async (req, res) => {
-
+exports.startSession = asyncHandler(async (req, res) => {
   const { problemId } = req.body;
 
   const session = await sessionService.startSession(
@@ -9,8 +10,30 @@ exports.startSession = async (req, res) => {
     problemId
   );
 
-  res.json({
-    sessionId: session.id
-  });
+  // Log "problem_opened" event
+  await eventService.logEvent(
+    session.id,
+    "problem_opened"
+  );
 
-};
+  res.json({
+    success: true,
+    data: { sessionId: session.id },
+    error: null
+  });
+});
+
+exports.getSessionInsights = asyncHandler(async (req, res) => {
+  const { sessionId } = req.params;
+
+  const insights = await sessionService.getSessionInsights(
+    sessionId,
+    req.user.userId
+  );
+
+  res.json({
+    success: true,
+    data: insights,
+    error: null
+  });
+});

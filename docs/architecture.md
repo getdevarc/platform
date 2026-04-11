@@ -54,9 +54,11 @@ The frontend will be built using **Next.js** to provide a fast and scalable user
 
 ### Planned Tools
 
-- Next.js
-- TailwindCSS
-- Monaco Editor (for coding interface)
+- **Next.js 15+** (App Router)
+- **Tailwind CSS v4** (Advanced JIT engine)
+- **shadcn/ui** (Premium UI components)
+- **Monaco Editor** (High-performance coding interface)
+- **Zustand** (Global state management)
 
 ---
 
@@ -84,10 +86,13 @@ Submission Service
 Handles code submissions and execution results.
 
 AI Service  
-Interacts with large language models for hints, explanations, and code reviews.
+Interacts with Groq SDK (Llama 3.1) for hints, explanations, and reviews.
 
 User Progress Service  
 Tracks solved problems, difficulty levels, and performance metrics.
+
+Session & Insight Service  
+Manages the lifecycle of a solving session and generates post-submission "Solve Insights".
 
 ---
 
@@ -106,12 +111,15 @@ Explanation of optimal solutions and algorithmic approaches.
 AI Code Review  
 Feedback on submitted code including readability, efficiency, and improvements.
 
-AI services will interact with external LLM providers.
+AI Solve Insights  
+Deep analysis of the user's thinking process based on their interaction timeline (hints used, attempts, retries).
+
+AI services will interact with high-performance LLM providers via Groq.
 
 ### Planned AI Providers
 
-OpenAI  
-Azure OpenAI
+Groq (Llama 3.1 8B/70B)  
+High-speed inference for real-time coding guidance.
 
 Prompt pipelines will be designed to ensure responses remain educational rather than revealing complete solutions prematurely.
 
