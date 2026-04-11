@@ -2,232 +2,71 @@
 
 ## Overview
 
-DevArc is designed as a modular full-stack platform that integrates coding practice, AI-powered guidance, and developer learning analytics.
-
-The architecture focuses on scalability, modularity, and clear separation of concerns so that new features can be added without disrupting existing components.
+DevArc is a modular full-stack platform that integrates coding practice, AI-powered guidance, and developer learning analytics. The architecture focuses on premium, high-end user experiences through glassmorphism UI and track-aware AI services.
 
 The platform consists of four main layers:
 
-1. Frontend Application
-2. Backend API Services
-3. Database Layer
-4. AI Services Layer
+1. **Frontend App (Next.js 15)**: Glassmorphism UI, Monaco Editor, and real-time AI feedback panels.
+2. **Backend API (Node.js/Express)**: Modular services for session management, submissions, and AI prompting.
+3. **Database Layer (PostgreSQL)**: Complex relational schema for tracking user events, insights, and career roadmaps.
+4. **AI/LLM Layer (Groq/Llama 3.1)**: High-speed inference for hints, reviews, and mock interviews.
 
 ---
 
-# High Level Architecture
+## 01 / Core Modules
 
-Frontend (Next.js)
-        |
-Backend API (Node.js / Express)
-        |
-Application Services
-        |
-Database (PostgreSQL)
-        |
-AI Services (LLM APIs)
+### A. Career Onboarding & Coaching
+DevArc begins with an "Elite Persona" onboarding flow.
+- **Resume Parser**: Uses `pdf-parse` to extract technical DNA from user resumes.
+- **Roadmap Generator**: AI synthesizes a bespoke 3-month plan based on the user's gaps and target role (Frontend, Backend, etc.).
 
-The backend acts as the central coordinator between user requests, AI services, and database operations.
+### B. Gamified Solve Engine
+The solving workspace is designed to analyze *how* a user thinks, not just if they solved the problem.
+- **Session Tracking**: Every hint, code run, and attempt is logged as a `solve_event`.
+- **Dynamic Scoring**: Users start with 100 points; AI hints deduct 20 points, gamifying the learning process.
+- **Insight Engine**: Post-solve AI analysis that reviews the event timeline to provide deep feedback on the user's logic and resilience.
 
----
-
-# Frontend Architecture
-
-The frontend will be built using **Next.js** to provide a fast and scalable user experience.
-
-### Responsibilities
-
-- User authentication flows
-- Coding problem interface
-- Code editor integration
-- Displaying problem explanations
-- Showing AI hints and feedback
-- Tracking user progress
-
-### Key Components
-
-- Problem list page
-- Problem solving interface
-- Code editor
-- Submission history
-- User dashboard
-
-### Planned Tools
-
-- **Next.js 15+** (App Router)
-- **Tailwind CSS v4** (Advanced JIT engine)
-- **shadcn/ui** (Premium UI components)
-- **Monaco Editor** (High-performance coding interface)
-- **Zustand** (Global state management)
+### C. Mock Interview Module
+A professional-grade preparation environment.
+- **Track Selection**: DSA, System Design, Frontend Core, or Frameworks.
+- **AI Interviewer**: A track-aware agent that conducts a real-time mock session.
+- **PDF Reporting**: Uses `jspdf` to transform interview performance (Logic, Quality, Comm.) into a professional downloadable evaluation.
 
 ---
 
-# Backend Architecture
+## 02 / Frontend Architecture
 
-The backend will be implemented using **Node.js with Express**.
-
-The API layer is responsible for:
-
-- user authentication
-- problem management
-- code submissions
-- AI service integration
-- analytics and progress tracking
-
-### Backend Modules
-
-Auth Service  
-Handles user authentication and authorization.
-
-Problem Service  
-Manages coding problems and problem metadata.
-
-Submission Service  
-Handles code submissions and execution results.
-
-AI Service  
-Interacts with Groq SDK (Llama 3.1) for hints, explanations, and reviews.
-
-User Progress Service  
-Tracks solved problems, difficulty levels, and performance metrics.
-
-Session & Insight Service  
-Manages the lifecycle of a solving session and generates post-submission "Solve Insights".
+- **Next.js 15 (App Router)**: Core framework.
+- **Tailwind CSS v4**: Styling with premium ZnO-zinc based dark themes.
+- **Monaco Editor**: High-performance solution sandbox.
+- **Zustand**: Global state for Auth and Workspace sessions.
+- **Framer Motion**: Smooth micro-interactions and route transitions.
 
 ---
 
-# AI Services Layer
+## 03 / Backend Services
 
-AI capabilities are a core component of DevArc.
-
-The AI layer will provide:
-
-AI Hint Generation  
-Guided hints when developers are stuck on problems.
-
-AI Solution Explanation  
-Explanation of optimal solutions and algorithmic approaches.
-
-AI Code Review  
-Feedback on submitted code including readability, efficiency, and improvements.
-
-AI Solve Insights  
-Deep analysis of the user's thinking process based on their interaction timeline (hints used, attempts, retries).
-
-AI services will interact with high-performance LLM providers via Groq.
-
-### Planned AI Providers
-
-Groq (Llama 3.1 8B/70B)  
-High-speed inference for real-time coding guidance.
-
-Prompt pipelines will be designed to ensure responses remain educational rather than revealing complete solutions prematurely.
+- **Auth Service**: Custom session-based JWT authentication.
+- **AI Service**: Centralized prompt management for Groq.
+- **Insight & Event Service**: Analyzes user behavior for "Solve Insights".
+- **Interview Service**: Manages mock sessions and PDF synthesis.
+- **Submission Service**: Bridges to Judge0 for code execution.
 
 ---
 
-# Coding Execution System
+## 04 / Data Flow: Thinking Analysis
 
-The coding execution system allows users to run and validate their code against predefined test cases.
-
-Execution pipeline:
-
-User Code Submission  
-        ↓
-Backend Validation  
-        ↓
-Code Execution Service  
-        ↓
-Test Case Evaluation  
-        ↓
-Result Returned to User
-
-### Planned Integration
-
-Judge0 API (for code execution sandboxing)
-
-This ensures code runs in a secure isolated environment.
+```mermaid
+graph TD
+    A[User Opens Problem] --> B[Solve Session Created]
+    B --> C[User Interactions: Hints/Runs]
+    C --> D[Solve Events Logged]
+    D --> E[Submissions Evaluation]
+    E -- Accepted --> F[AI Insight Engine]
+    F --> G[Solve Insight Table]
+    G --> H[Final UI Presentation]
+```
 
 ---
 
-# Database Architecture
-
-DevArc will use **PostgreSQL** as the primary database.
-
-Core entities include:
-
-Users  
-Stores developer account information.
-
-Problems  
-Coding problems and metadata.
-
-Submissions  
-User submissions for each problem.
-
-AI Interactions  
-AI hint requests and explanations.
-
-Progress Metrics  
-Tracking solved problems and learning performance.
-
----
-
-# Infrastructure
-
-Initial deployment architecture:
-
-Frontend  
-Hosted on Vercel
-
-Backend  
-Cloud-hosted Node.js service
-
-Database  
-Managed PostgreSQL instance
-
-AI Services  
-External LLM APIs
-
-Future infrastructure improvements may include:
-
-- containerization
-- microservices
-- distributed job processing
-- caching layers
-
----
-
-# Scalability Considerations
-
-The system is designed with future scale in mind.
-
-Possible improvements:
-
-- Redis caching layer
-- queue-based job processing
-- horizontally scalable backend services
-- optimized AI request pipelines
-
----
-
-# Security Considerations
-
-Key security priorities include:
-
-- secure authentication flows
-- protected API endpoints
-- sandboxed code execution
-- rate limiting for AI endpoints
-
----
-
-# Future Architecture Evolution
-
-As DevArc grows, the architecture may evolve into:
-
-- microservice-based AI modules
-- distributed execution systems
-- advanced developer analytics
-- personalized AI learning agents
-
-The goal is to maintain a flexible architecture that supports rapid feature development while remaining stable and scalable.
+*DevArc Engineering | System Architecture v4.0 | Production Ready*
