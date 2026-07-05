@@ -1,12 +1,21 @@
 const submissionService = require("../services/submissionService");
 const asyncHandler = require("../utils/asyncHandler");
 
+const getLanguageName = (body) => {
+  if (body.language) return body.language.toLowerCase();
+  const id = parseInt(body.languageId, 10);
+  if (id === 63) return "javascript";
+  if (id === 71) return "python";
+  if (id === 54) return "cpp";
+  return "javascript";
+};
+
 exports.createSubmission = asyncHandler(async (req, res) => {
   const submission = await submissionService.submitCode({
     userId: req.user.userId,
     problemId: req.body.problemId,
-    code: req.body.code,
-    language: req.body.language,
+    code: req.body.code || req.body.sourceCode,
+    language: getLanguageName(req.body),
     sessionId: req.body.sessionId
   });
 
@@ -33,8 +42,8 @@ exports.submitCode = asyncHandler(async (req, res) => {
   const submission = await submissionService.submitCode({
     userId: req.user.userId,
     problemId: req.body.problemId,
-    code: req.body.code,
-    language: req.body.language,
+    code: req.body.code || req.body.sourceCode,
+    language: getLanguageName(req.body),
     sessionId: req.body.sessionId
   });
 

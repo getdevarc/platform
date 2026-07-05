@@ -23,7 +23,9 @@ import {
   BrainCircuit,
   Clock,
   ChevronRight,
-  Loader2
+  Loader2,
+  X,
+  Zap
 } from "lucide-react";
 import { 
   Radar, 
@@ -40,12 +42,17 @@ import { ClientOnly } from "@/components/shared/ClientOnly";
 interface DashboardData {
   stats: { name: string; value: string; color: string }[];
   recentInsights: any[];
+  skillMastery?: { language: string; count: number }[];
 }
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Modal Details & Reattempt prompt state hooks
+  const [selectedFeedInsight, setSelectedFeedInsight] = useState<any | null>(null);
+  const [showReattemptConfirm, setShowReattemptConfirm] = useState<string | null>(null);
 
   // Mock Radar Data for Mastery Visualization
   const radarData = [
@@ -80,6 +87,9 @@ export default function DashboardPage() {
     );
   }
 
+  // Helper to extract streak value safely
+  const currentStreak = data?.stats.find(s => s.name === "Current Streak")?.value || "0 Days";
+
   return (
     <div className="flex-1 overflow-y-auto bg-background p-8">
       <div className="max-w-7xl mx-auto space-y-10">
@@ -91,7 +101,7 @@ export default function DashboardPage() {
               Welcome Back, <span className="text-primary">{user?.name}</span>! 👋
             </h1>
             <p className="text-zinc-500 text-sm">
-              Your AI Mentor has analyzed 5 new patterns since your last session.
+              Your AI Mentor has verified all solved sub-components and stats.
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -99,7 +109,7 @@ export default function DashboardPage() {
                 <Flame className="text-orange-500 h-5 w-5 fill-orange-500/20" />
                 <div>
                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider leading-none">Streak</p>
-                   <p className="text-sm font-bold text-white">4 Days</p>
+                   <p className="text-sm font-bold text-white">{currentStreak}</p>
                 </div>
              </div>
              <div className="px-4 py-2 rounded-xl bg-primary/10 border border-primary/20 flex items-center gap-3 shadow-lg shadow-primary/5">
@@ -120,7 +130,7 @@ export default function DashboardPage() {
             return (
               <Card key={i} className="bg-zinc-900/30 border-white/5 backdrop-blur-sm group hover:border-primary/20 transition-all cursor-default">
                 <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                  <CardTitle className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em]">
+                  <CardTitle className="text-[10px] font-bold text-zinc-550 uppercase tracking-[0.2em]">
                     {stat.name}
                   </CardTitle>
                   <Icon size={16} className={cn(stat.color, "group-hover:scale-110 transition-transform")} />
@@ -128,7 +138,7 @@ export default function DashboardPage() {
                 <CardContent>
                   <div className="flex items-end gap-2 text-white">
                     <span className="text-3xl font-bold tracking-tighter">{stat.value}</span>
-                    <span className="text-[10px] text-zinc-600 font-bold mb-1.5">+2 this week</span>
+                    <span className="text-[10px] text-zinc-650 font-bold mb-1.5">Preserved</span>
                   </div>
                 </CardContent>
               </Card>
@@ -151,9 +161,11 @@ export default function DashboardPage() {
                   Detailed AI performance analysis from your recent sessions.
                 </CardDescription>
               </div>
-              <Button variant="outline" size="sm" className="bg-zinc-900 border-white/10 text-xs font-bold uppercase tracking-wider rounded-lg h-7">
-                View All
-              </Button>
+              <Link href="/problems">
+                <Button variant="outline" size="sm" className="bg-zinc-900 border-white/10 text-xs font-bold uppercase tracking-wider rounded-lg h-7">
+                  View All
+                </Button>
+              </Link>
             </CardHeader>
             <CardContent className="space-y-4">
               <ClientOnly>
@@ -170,43 +182,52 @@ export default function DashboardPage() {
                 ) : (
                   <div className="space-y-4">
                     {data?.recentInsights.map((insight: any) => (
-                      <div key={insight.id} className="p-4 rounded-2xl bg-zinc-900/50 border border-white/5 hover:border-primary/30 transition-all group">
-                        <div className="flex items-start justify-between mb-3">
-                           <div className="space-y-1">
+                      <div key={insight.id} className="p-5 rounded-2xl bg-zinc-900/30 border border-white/5 hover:border-primary/20 transition-all group">
+                        <div className="flex items-start justify-between">
+                           <div 
+                             onClick={() => setSelectedFeedInsight(insight)}
+                             className="space-y-2 cursor-pointer flex-1"
+                           >
                               <div className="flex items-center gap-2">
-                                <h3 className="font-bold text-white group-hover:text-primary transition-colors">{insight.problem_title}</h3>
-                                <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-500 border-none text-[8px] h-4 uppercase tracking-[0.2em] px-1.5">
-                                   Completed
-                                </Badge>
+                                <h3 className="font-extrabold text-white group-hover:text-primary transition-colors text-base">{insight.problem_title}</h3>
+                                <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-450 border-none text-[8px] h-4 uppercase tracking-[0.2em] px-1.5">
+                                   {insight.status.toUpperCase()}
+                                 </Badge>
                               </div>
-                              <div className="flex items-center gap-2">
-                                 <Badge variant="outline" className="text-[10px] bg-yellow-500/10 text-yellow-500 border-none">{insight.problem_difficulty}</Badge>
-                                 <span className="text-[10px] text-zinc-600 flex items-center gap-1">
-                                    <Clock size={10} /> {new Date(insight.created_at).toLocaleDateString()}
-                                 </span>
+                              
+                              <p className="text-[11px] text-zinc-400">
+                                This question has been solved <span className="text-primary font-bold">{insight.solved_count}</span> {insight.solved_count === 1 ? "time" : "times"}.
+                              </p>
+
+                              <div className="flex flex-wrap gap-1.5 pt-0.5">
+                                 {insight.languages.map((lang: string) => (
+                                    <Badge key={lang} variant="outline" className="text-[8px] font-bold uppercase py-0 px-2 bg-zinc-900 text-zinc-450 border-white/5">
+                                       {lang}
+                                    </Badge>
+                                 ))}
                               </div>
                            </div>
-                           <div className="flex items-center gap-2">
-                             <Link href={`/problems/${insight.problem_id}`}>
-                               <Button variant="ghost" size="sm" className="h-7 text-[8px] font-bold uppercase tracking-widest text-zinc-500 hover:text-white border border-white/5 hover:border-primary/20 rounded-lg group/btn">
-                                  <Sparkles size={10} className="mr-1 text-primary group-hover/btn:animate-pulse" />
-                                  Solve Again
-                               </Button>
-                             </Link>
-                             <Button variant="ghost" size="icon" className="text-zinc-600 group-hover:text-white transition-transform group-hover:translate-x-1">
+                           
+                           <div className="flex items-center gap-3 shrink-0">
+                             <Button 
+                               variant="ghost" 
+                               size="sm" 
+                               className="h-8 text-[9px] font-bold uppercase tracking-widest text-zinc-400 hover:text-white border border-white/5 hover:border-primary/30 rounded-lg group/btn cursor-pointer"
+                               onClick={() => setShowReattemptConfirm(insight.problem_id)}
+                             >
+                                <Sparkles size={11} className="mr-1 text-primary group-hover/btn:animate-pulse" />
+                                Solve Again
+                             </Button>
+                             
+                             <Button 
+                               variant="ghost" 
+                               size="icon" 
+                               className="h-8 w-8 rounded-full hover:bg-zinc-800 text-zinc-500 hover:text-white transition-all cursor-pointer"
+                               onClick={() => setSelectedFeedInsight(insight)}
+                             >
                                 <ChevronRight size={18} />
                              </Button>
                            </div>
-                        </div>
-                        <p className="text-xs text-zinc-400 line-clamp-2 leading-relaxed mb-4">
-                          {insight.analysis_text}
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                           {insight.strengths.map((s: string, idx: number) => (
-                             <Badge key={idx} variant="secondary" className="bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border-none text-[10px] px-2 py-0">
-                                {s}
-                             </Badge>
-                           ))}
                         </div>
                       </div>
                     ))}
@@ -220,10 +241,33 @@ export default function DashboardPage() {
           <div className="space-y-8">
             <Card className="bg-zinc-900/20 border-white/5 backdrop-blur-sm overflow-hidden">
               <CardHeader>
-                <CardTitle className="text-white text-sm uppercase tracking-[0.2em]">Skill Mastery</CardTitle>
+                <CardTitle className="text-white text-sm uppercase tracking-[0.2em]">Skill Mastery (Languages)</CardTitle>
               </CardHeader>
-              <CardContent className="pt-0 flex justify-center">
-                <div className="h-[250px] w-full mt-[-20px]">
+              <CardContent className="pt-0 space-y-5">
+                {data?.skillMastery && data.skillMastery.length > 0 ? (
+                  <div className="space-y-4">
+                    {data.skillMastery.map((skill, idx) => (
+                      <div key={idx} className="space-y-1">
+                        <div className="flex items-center justify-between text-xs font-bold text-zinc-350">
+                          <span className="uppercase tracking-wider text-[10px] text-zinc-400">{skill.language}</span>
+                          <span className="text-primary font-mono text-[10px]">{skill.count} Solved</span>
+                        </div>
+                        <div className="h-1.5 w-full bg-zinc-900 rounded-full overflow-hidden border border-white/5">
+                          <div 
+                            className="h-full bg-gradient-to-r from-cyan-500 to-primary rounded-full transition-all"
+                            style={{ width: `${Math.min(100, (skill.count / 6) * 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="h-24 flex items-center justify-center border border-dashed border-white/5 rounded-xl text-[10px] font-bold text-zinc-550 uppercase tracking-widest">
+                    No solutions recorded yet
+                  </div>
+                )}
+
+                <div className="h-[180px] w-full mt-2">
                   <ClientOnly>
                     <ResponsiveContainer width="100%" height="100%">
                       <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
@@ -263,6 +307,114 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Solve Detail Display Modal */}
+      {selectedFeedInsight && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 backdrop-blur-md bg-black/80 animate-in fade-in duration-300">
+           <Card className="w-full max-w-xl bg-zinc-950 border-white/10 shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 inset-x-0 h-1.5 bg-primary" />
+              <CardHeader className="flex flex-row items-center justify-between pb-4">
+                 <div>
+                    <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
+                       {selectedFeedInsight.problem_title}
+                    </CardTitle>
+                    <CardDescription className="text-zinc-500 uppercase tracking-widest text-[9px] mt-1 font-bold">
+                       Solve Performance Report Card
+                    </CardDescription>
+                 </div>
+                 <Button 
+                   variant="ghost" 
+                   size="icon" 
+                   className="h-8 w-8 rounded-full bg-zinc-900 border border-white/5 text-zinc-450 hover:text-white cursor-pointer"
+                   onClick={() => setSelectedFeedInsight(null)}
+                 >
+                    <X size={14} />
+                 </Button>
+              </CardHeader>
+              
+              <CardContent className="space-y-6 pt-2">
+                 <div className="grid grid-cols-3 gap-4">
+                    <div className="p-3 bg-zinc-900/40 border border-white/5 rounded-xl text-center">
+                       <p className="text-[9px] font-bold text-zinc-550 uppercase">Difficulty</p>
+                       <p className="text-xs font-bold text-yellow-500 uppercase mt-0.5">{selectedFeedInsight.problem_difficulty}</p>
+                    </div>
+                    <div className="p-3 bg-zinc-900/40 border border-white/5 rounded-xl text-center">
+                       <p className="text-[9px] font-bold text-zinc-550 uppercase">Status</p>
+                       <p className="text-xs font-bold text-emerald-400 uppercase mt-0.5">{selectedFeedInsight.status.toUpperCase()}</p>
+                    </div>
+                    <div className="p-3 bg-zinc-900/40 border border-white/5 rounded-xl text-center">
+                       <p className="text-[9px] font-bold text-zinc-550 uppercase">Solved Count</p>
+                       <p className="text-xs font-bold text-primary mt-0.5">{selectedFeedInsight.solved_count} Times</p>
+                    </div>
+                 </div>
+
+                 {/* Attempts History */}
+                 <div className="space-y-3">
+                    <h4 className="text-[10px] font-bold text-zinc-450 uppercase tracking-widest">History of Submissions</h4>
+                    <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1">
+                       {selectedFeedInsight.attempts && selectedFeedInsight.attempts.map((att: any, idx: number) => (
+                          <div key={idx} className="p-3 rounded-xl bg-zinc-900/20 border border-white/5 flex items-center justify-between text-xs">
+                             <div className="space-y-0.5">
+                                <p className="font-bold text-white uppercase tracking-wider text-[10px]">{att.language}</p>
+                                <p className="text-[10px] text-zinc-550">{new Date(att.created_at).toLocaleString()}</p>
+                             </div>
+                             <div className="flex items-center gap-3">
+                                <Badge className="bg-emerald-500/10 text-emerald-450 border-none text-[10px] px-2 py-0">
+                                   {att.passed_cases}/{att.total_cases} Cases
+                                </Badge>
+                                <span className="font-mono text-zinc-400 font-bold">Score: {att.score}</span>
+                             </div>
+                          </div>
+                       ))}
+                    </div>
+                 </div>
+
+                 <div className="p-4 bg-primary/5 border border-primary/10 rounded-2xl">
+                    <p className="text-[10px] text-primary font-bold uppercase tracking-widest mb-1.5">AI Feedback Analysis</p>
+                    <p className="text-xs text-zinc-350 leading-relaxed italic">
+                       "{selectedFeedInsight.analysis_text}"
+                    </p>
+                 </div>
+              </CardContent>
+           </Card>
+        </div>
+      )}
+
+      {/* Solve Again Reattempt Confirmation Popup */}
+      {showReattemptConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 backdrop-blur-md bg-black/85 animate-in fade-in duration-300">
+           <Card className="w-full max-w-md bg-zinc-950 border-white/10 shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 inset-x-0 h-1.5 bg-amber-500" />
+              <CardHeader className="text-center pb-2">
+                 <div className="mx-auto h-12 w-12 rounded-full bg-zinc-905 border border-white/5 flex items-center justify-center mb-4 text-amber-500">
+                    <Zap size={24} />
+                 </div>
+                 <CardTitle className="text-lg font-bold text-white tracking-tight">Reattempt Challenge?</CardTitle>
+                 <CardDescription className="text-xs text-zinc-500">
+                    You have already successfully submitted code for this question. Do you want to reattempt?
+                 </CardDescription>
+              </CardHeader>
+              
+              <CardContent className="flex items-center justify-center gap-3 pt-4">
+                 <Button 
+                   variant="outline" 
+                   className="rounded-xl h-10 px-6 border-white/10 bg-zinc-900 text-zinc-400 hover:text-white cursor-pointer"
+                   onClick={() => setShowReattemptConfirm(null)}
+                 >
+                    Cancel
+                 </Button>
+                 <Button 
+                   className="rounded-xl h-10 px-6 bg-amber-500 hover:bg-amber-600 text-white font-bold cursor-pointer"
+                   onClick={() => {
+                      window.location.href = `/solve/${showReattemptConfirm}`;
+                   }}
+                 >
+                    Confirm Reattempt
+                 </Button>
+              </CardContent>
+           </Card>
+        </div>
+      )}
     </div>
   );
 }

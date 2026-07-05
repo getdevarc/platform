@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { 
   Search, 
-  Filter, 
   CheckCircle2, 
   ChevronRight,
   Code2,
@@ -23,33 +22,58 @@ interface Problem {
   id: string;
   title: string;
   difficulty: "easy" | "medium" | "hard";
-  status?: "solved" | "unsolved"; // Mock or from a join
+  status?: "solved" | "unsolved";
 }
 
 export default function ProblemsPage() {
   const [problems, setProblems] = useState<Problem[]>([]);
+  const [solvedMap, setSolvedMap] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "new" | "solved">("all");
 
   useEffect(() => {
-    const fetchProblems = async () => {
+    const fetchSubmissionsAndProblems = async () => {
       try {
-        const res = await api.get<ApiResponse<Problem[]>>("/problems");
-        setProblems(res.data.data);
+        const [problemsRes, submissionsRes] = await Promise.all([
+          api.get<ApiResponse<Problem[]>>("/problems"),
+          api.get("/submissions")
+        ]);
+        
+        setProblems(problemsRes.data.data || []);
+        
+        const userSubmissions = submissionsRes.data.data || [];
+        const acceptedSubmissions = userSubmissions.filter((s: any) => s.status === "accepted");
+        const mapping: Record<string, string[]> = {};
+        acceptedSubmissions.forEach((s: any) => {
+          if (!mapping[s.problem_id]) {
+            mapping[s.problem_id] = [];
+          }
+          if (!mapping[s.problem_id].includes(s.language)) {
+            mapping[s.problem_id].push(s.language);
+          }
+        });
+        setSolvedMap(mapping);
       } catch (err) {
-        console.error("Failed to fetch problems", err);
+        console.error("Failed to fetch problems/submissions data", err);
       } finally {
         setLoading(false);
       }
     };
-    fetchProblems();
+    fetchSubmissionsAndProblems();
   }, []);
 
   const filteredProblems = problems.filter(p => {
     const matchesSearch = p.title.toLowerCase().includes(search.toLowerCase());
     const matchesFilter = filter === "all" || p.difficulty === filter;
-    return matchesSearch && matchesFilter;
+    
+    const isSolved = solvedMap[p.id] && solvedMap[p.id].length > 0;
+    const matchesStatus = statusFilter === "all" || 
+      (statusFilter === "solved" && isSolved) || 
+      (statusFilter === "new" && !isSolved);
+      
+    return matchesSearch && matchesFilter && matchesStatus;
   });
 
   return (
@@ -74,38 +98,61 @@ export default function ProblemsPage() {
              </div>
              <div className="flex items-center gap-2 px-3 py-2">
                 <TrendingUp size={16} className="text-emerald-500" />
-                <span className="text-xs font-bold text-white uppercase tracking-wider text-emerald-500">12 Solving Sessions Today</span>
+                <span className="text-xs font-bold text-emerald-500 uppercase tracking-wider">Solved Tracker Enabled</span>
              </div>
           </div>
         </div>
-
+ 
         {/* Controls */}
         <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-           <div className="relative w-full md:w-96">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+           <div className="relative w-full md:w-80">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-550" size={18} />
               <Input 
                 placeholder="Search problems..." 
-                className="pl-10 bg-zinc-900/30 border-white/10 text-white placeholder:text-zinc-600 focus:border-primary/50 transition-all rounded-xl h-11"
+                className="pl-10 bg-zinc-900/30 border-white/10 text-white placeholder:text-zinc-650 focus:border-primary/50 transition-all rounded-xl h-11"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
            </div>
            
-           <div className="flex items-center gap-2">
-              {["all", "easy", "medium", "hard"].map((f) => (
-                <Button
-                  key={f}
-                  variant={filter === f ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setFilter(f)}
-                  className={cn(
-                    "rounded-full h-8 px-4 text-xs font-bold uppercase tracking-widest",
-                    filter === f ? "bg-primary text-primary-foreground" : "text-zinc-400 hover:text-white"
-                  )}
-                >
-                  {f}
-                </Button>
-              ))}
+           <div className="flex flex-wrap items-center gap-3">
+              {/* Difficulty Filters */}
+              <div className="flex items-center gap-1.5 bg-zinc-900/40 p-1 rounded-full border border-white/5">
+                {["all", "easy", "medium", "hard"].map((f) => (
+                  <Button
+                    key={f}
+                    variant={filter === f ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setFilter(f)}
+                    className={cn(
+                      "rounded-full h-8 px-3.5 text-[10px] font-bold uppercase tracking-wider",
+                      filter === f ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" : "text-zinc-400 hover:text-white"
+                    )}
+                  >
+                    {f}
+                  </Button>
+                ))}
+              </div>
+
+              {/* Status Filters */}
+              <div className="flex items-center gap-1.5 bg-zinc-900/40 p-1 rounded-full border border-white/5">
+                {["all", "new", "solved"].map((status) => (
+                  <Button
+                    key={status}
+                    variant={statusFilter === status ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setStatusFilter(status as any)}
+                    className={cn(
+                      "rounded-full h-8 px-3.5 text-[10px] font-bold uppercase tracking-wider",
+                      statusFilter === status 
+                        ? "bg-amber-600 text-white shadow-lg shadow-amber-900/20" 
+                        : "text-zinc-400 hover:text-white"
+                    )}
+                  >
+                    {status === "all" ? "status: all" : status}
+                  </Button>
+                ))}
+              </div>
            </div>
         </div>
 
@@ -128,10 +175,13 @@ export default function ProblemsPage() {
                            <Code2 size={20} className="text-zinc-400 group-hover:text-primary transition-colors" />
                         </div>
                         <div className="space-y-0.5">
-                          <h3 className="font-bold text-white text-lg group-hover:text-primary transition-colors">
+                          <h3 className="font-bold text-white text-lg group-hover:text-primary transition-colors flex items-center gap-2">
                             {problem.title}
+                            {solvedMap[problem.id] && solvedMap[problem.id].length > 0 && (
+                              <CheckCircle2 size={16} className="text-emerald-500 fill-emerald-500/10 shrink-0" />
+                            )}
                           </h3>
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
                              <Badge 
                                variant="outline" 
                                className={cn(
@@ -143,16 +193,34 @@ export default function ProblemsPage() {
                              >
                                {problem.difficulty}
                              </Badge>
-                             <span className="text-[10px] text-zinc-600 font-medium">•</span>
-                             <span className="text-[10px] text-zinc-600 font-bold uppercase tracking-wider">Array, Hash Table</span>
+                             <span className="text-[10px] text-zinc-650 font-medium">•</span>
+                             <span className="text-[10px] text-zinc-650 font-bold uppercase tracking-wider">Array, Dynamic Programming</span>
+                             
+                             <span className="text-[10px] text-zinc-650 font-medium">•</span>
+                             {solvedMap[problem.id] && solvedMap[problem.id].length > 0 ? (
+                               <Badge variant="outline" className="text-[10px] uppercase font-bold px-1.5 h-4 border-none bg-emerald-500/10 text-emerald-450">
+                                 Solved in {solvedMap[problem.id].join(", ")}
+                               </Badge>
+                             ) : (
+                               <Badge variant="outline" className="text-[10px] uppercase font-bold px-1.5 h-4 border-none bg-zinc-900 text-zinc-550">
+                                 Unsolved
+                               </Badge>
+                             )}
                           </div>
                         </div>
                       </div>
 
                       <div className="flex items-center gap-8">
                          <div className="hidden lg:flex flex-col items-end">
-                            <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest leading-none mb-1">Success Rate</span>
-                            <span className="text-xs font-bold text-emerald-500">42%</span>
+                            <span className="text-[10px] text-zinc-550 uppercase font-bold tracking-widest leading-none mb-1">
+                              Status
+                            </span>
+                            <span className={cn(
+                              "text-xs font-bold uppercase tracking-wider",
+                              solvedMap[problem.id] && solvedMap[problem.id].length > 0 ? "text-amber-500" : "text-primary"
+                            )}>
+                              {solvedMap[problem.id] && solvedMap[problem.id].length > 0 ? "Reattempt" : "Solve"}
+                            </span>
                          </div>
                          <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full text-zinc-600 group-hover:text-white group-hover:bg-primary/20 transition-all">
                             <ChevronRight size={20} />
