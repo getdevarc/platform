@@ -7,7 +7,7 @@ exports.createSubmission = async (submission) => {
     `INSERT INTO submissions (user_id, problem_id, code, language, score, penalty)
      VALUES ($1,$2,$3,$4,$5,$6)
      RETURNING *`,
-    [userId, problemId, code, language, score, penalty]
+    [userId, problemId, code, language, score ?? 0, penalty ?? 0]
   );
 
   return result.rows[0];
@@ -22,13 +22,13 @@ exports.getUserSubmissions = async (userId) => {
   return result.rows;
 };
 
-exports.updateStatus = async (id, status) => {
+exports.updateStatus = async (id, status, passedCases = 0, totalCases = 0, score = 0) => {
   const result = await db.query(
     `UPDATE submissions
-     SET status=$1
-     WHERE id=$2
+     SET status=$1, passed_cases=$2, total_cases=$3, score=$4
+     WHERE id=$5
      RETURNING *`,
-    [status, id]
+    [status, passedCases, totalCases, score, id]
   );
 
   return result.rows[0];

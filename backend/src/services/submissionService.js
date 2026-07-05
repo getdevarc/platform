@@ -17,7 +17,7 @@ exports.submitCode = async (data) => {
   }
 
   const languageId = languages[data.language];
-  
+
   const result = await testCaseService.runTestCases(
     data.code,
     languageId,
@@ -30,15 +30,23 @@ exports.submitCode = async (data) => {
       data.sessionId,
       "submission"
     );
-    
+
     if (result.status === "accepted") {
       await sessionService.endSession(data.sessionId);
     }
   }
 
+  const cases = result.testCases || [];
+  const passedCasesCount = cases.filter(c => c.passed).length;
+  const totalCasesCount = cases.length;
+  const score = result.status === "accepted" ? 100 : Math.round((passedCasesCount / Math.max(1, totalCasesCount)) * 100);
+
   await submissionRepository.updateStatus(
     submission.id,
-    result.status
+    result.status,
+    passedCasesCount,
+    totalCasesCount,
+    score
   );
 
   logger.info("Code submitted for problem", { problemId: data.problemId, submissionId: submission.id });
@@ -46,7 +54,9 @@ exports.submitCode = async (data) => {
 
   return {
     submissionId: submission.id,
-    status: result.status
+    status: result.status,
+    testCases: result.testCases,
+    score: score
   };
 };
 

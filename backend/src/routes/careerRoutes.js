@@ -15,4 +15,10 @@ router.post("/analyze-resume", upload.single("resume"), careerController.analyze
 // Complete onboarding questionnaire
 router.post("/onboarding", careerController.completeOnboarding);
 
+// Get latest active roadmap
+router.get("/latest", careerController.getLatestRoadmap);
+
+// Manually regenerate roadmap
+router.post("/roadmap", careerController.generateRoadmap);
+
 module.exports = router;

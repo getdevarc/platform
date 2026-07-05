@@ -249,9 +249,9 @@ Keep the response professional and suitable for a middle-to-senior software engi
 // -------- Conversational Interview Message --------
 exports.generateConversationalResponse = async (history, userMessage) => {
   const messages = [
-    { 
-      role: "system", 
-      content: "You are a Senior Software Engineer from a Top Tech Co conducting a coding interview. Be professional, slightly challenging, but encouraging. Focus on problem-solving, edge cases, and optimization." 
+    {
+      role: "system",
+      content: "You are a Senior Software Engineer from a Top Tech Co conducting a coding interview. Be professional, slightly challenging, but encouraging. Focus on problem-solving, edge cases, and optimization. CRITICAL: You must guide the candidate verbally by asking leading questions or hinting at complexity, but you must NEVER output, outline, or reveal any complete solution code or logic before they submit their solution using the Submit button. Keep code solutions entirely hidden."
     },
     ...history,
     { role: "user", content: userMessage }
@@ -266,14 +266,25 @@ exports.generateConversationalResponse = async (history, userMessage) => {
 };
 
 // -------- Final Interview Report Card --------
-exports.generateFinalInterviewReport = async (transcript) => {
+exports.generateFinalInterviewReport = async (transcript, code, language) => {
   const prompt = `
-Analyze this coding interview transcript and provide a professional evaluation report.
+Analyze this coding interview transcript and the user's latest solution code to provide a professional evaluation report.
 
 Transcript:
 ${JSON.stringify(transcript)}
 
-Return STRICT JSON:
+Candidate's Final Code (${language || "javascript"}):
+\`\`\`${language || "javascript"}
+${code || "// No code submitted"}
+\`\`\`
+
+CRITICAL SCORING CONSTRAINTS:
+1. If the Candidate's Final Code is empty, contains only comments, or matches the placeholder boilerplate without custom user improvements solving the problem, you MUST strictly grade "totalScore", "logicScore", and "codeQualityScore" to 0 (or maximum 5 if some concepts were verbally discussed). The absolute maximum possible totalScore for this case is 10.
+2. If code is present but is critically flawed, contains severe syntax errors, or fails to address the problem requirements, the "totalScore" and "logicScore" MUST NOT exceed 35.
+3. Be highly critical and objective. Do not award passing scores (> 50) for incomplete, unrun, or bug-filled solutions.
+4. If "totalScore" is less than 65, the feedback "verdict" MUST be "NO HIRE".
+
+Return STRICT JSON ONLY, adhering to this structure:
 {
   "totalScore": 85,
   "logicScore": 90,
@@ -282,6 +293,52 @@ Return STRICT JSON:
   "overallFeedback": "Professional summary...",
   "strengths": ["list"],
   "weaknesses": ["list"],
+  "verdict": "HIRE / NO HIRE / STRONG HIRE"
+}
+`;
+
+  const response = await groq.chat.completions.create({
+    model: "llama-3.1-8b-instant",
+    messages: [
+      { role: "system", content: "You are a technical hiring manager. Return ONLY JSON." },
+      { role: "user", content: prompt }
+    ]
+  });
+
+  return safeParseAIJSON(response.choices[0].message.content);
+};
+
+// -------- Consolidated Multi-Question Interview Report Card --------
+exports.generateConsolidatedInterviewReport = async (transcript, completedQuestions) => {
+  const prompt = `
+Analyze this coding interview transcript and the collection of completed questions along with the user's submitted solutions.
+Provide a consolidated ex-FAANG hiring evaluation report.
+
+Transcript:
+---
+${JSON.stringify(transcript)}
+---
+
+Completed Questions & Submitted Solutions:
+---
+${JSON.stringify(completedQuestions)}
+---
+
+CRITICAL SCORING CONSTRAINTS:
+1. Score categories: "totalScore", "logicScore", "communicationScore", "codeQualityScore".
+2. If the user finished without completing or submitting code for any questions, all scores must strictly be 0.
+3. Be highly objective and critical. If code submissions fail test cases or show structural flaws, penalize logic/quality scores.
+4. If "totalScore" is less than 65, the feedback "verdict" MUST be "NO HIRE".
+
+Return STRICT JSON ONLY, adhering to this structure:
+{
+  "totalScore": 80,
+  "logicScore": 85,
+  "communicationScore": 75,
+  "codeQualityScore": 80,
+  "overallFeedback": "Consolidated interview performance summary...",
+  "strengths": ["list of overall strengths"],
+  "weaknesses": ["list of overall weaknesses"],
   "verdict": "HIRE / NO HIRE / STRONG HIRE"
 }
 `;
@@ -330,4 +387,75 @@ Generate a step-by-step roadmap including skills, projects, and DSA topics.
   });
 
   return roadmap;
+};
+
+// -------- Evaluate Interview Code Against Dynamic Test Cases --------
+exports.evaluateCodeAgainstTests = async (question, code, language) => {
+  const prompt = `
+    You are a technical interviewer and code testing validator.
+    
+    Given this interview question/problem details:
+    ---
+    ${question}
+    ---
+
+    Candidate's Solution Code (in ${language}):
+    ---
+    ${code}
+    ---
+
+    Analyze the candidate's solution code. You must generate 3 distinct test cases representing normal, edge case, and large or negative input scenarios.
+    Evaluate the candidate's implementation against these test cases.
+    
+    Return ONLY a STRICT raw JSON response matching the following schema.
+    Do not wrap it in markdown code blocks. Ensure there are no unescaped native newline characters in the string values (escape them as literal \\\\n).
+    
+    {
+      "success": true, // true if all 3 test cases pass successfully, false otherwise
+      "feedback": "A concise 1-2 sentence overall feedback summary explaining why tests passed or failed.",
+      "testCases": [
+        {
+          "input": "Input parameters description",
+          "expected": "Expected result description",
+          "output": "Actual result output by candidate's logic, or description of syntax exception",
+          "passed": true // true if matching, false otherwise
+        },
+        {
+          "input": "Input parameters description",
+          "expected": "Expected result description",
+          "output": "Actual result output by candidate's logic, or description of syntax exception",
+          "passed": true
+        },
+        {
+          "input": "Input parameters description",
+          "expected": "Expected result description",
+          "output": "Actual result output by candidate's logic, or description of syntax exception",
+          "passed": false
+        }
+      ]
+    }
+  `;
+
+  const response = await groq.chat.completions.create({
+    model: "llama-3.1-8b-instant",
+    messages: [
+      { role: "system", content: "You are a code assessment tool. Return ONLY strictly valid raw JSON. Always escape newlines inside JSON string values as \\\\n." },
+      { role: "user", content: prompt }
+    ]
+  });
+
+  const content = response.choices[0].message.content.trim();
+  try {
+    return safeParseAIJSON(content);
+  } catch (error) {
+    console.error("Failed to parse tested code LLM response:", content, error);
+    // Fallback test case results
+    return {
+      success: false,
+      feedback: "Code evaluation parsing encountered an AI compilation error. Please try running your tests again.",
+      testCases: [
+        { input: "Generics", expected: "Correct output", output: "Compiler parsing error", passed: false }
+      ]
+    };
+  }
 };

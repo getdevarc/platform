@@ -1,26 +1,37 @@
 const executionService = require("./executionService");
 
-exports.runTestCases = async (code, languageId, testCases) => {
+exports.runTestCases = async (code, languageId, testCases, sessionId) => {
+  const results = [];
+  let allPassed = true;
 
-  for (const testCase of testCases) {
+  const cases = testCases || [];
 
+  for (const testCase of cases) {
     const result = await executionService.executeCode(
       code,
       languageId,
-      testCase.input
+      testCase.input,
+      sessionId
     );
 
-    const output = result.stdout?.trim();
+    const output = (result.stdout || "").trim();
+    const expected = (testCase.expected_output || "").trim();
+    const passed = output === expected;
 
-    if (output !== testCase.expected_output) {
-      return {
-        status: "wrong_answer",
-        output
-      };
+    if (!passed) {
+      allPassed = false;
     }
+
+    results.push({
+      input: testCase.input,
+      expected: testCase.expected_output,
+      output: output || "Empty output",
+      passed
+    });
   }
 
   return {
-    status: "accepted"
+    status: allPassed ? "accepted" : "wrong_answer",
+    testCases: results
   };
-}; 
+};

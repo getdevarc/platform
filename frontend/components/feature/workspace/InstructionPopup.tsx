@@ -83,7 +83,7 @@ export function InstructionPopup({ problemTitle, onStart }: InstructionPopupProp
 
           <CardFooter className="pt-0 pb-8 px-6">
              <Button 
-               className="w-full h-12 rounded-2xl bg-primary text-white font-bold uppercase tracking-widest group shadow-lg shadow-primary/20"
+               className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-bold uppercase tracking-widest group shadow-lg shadow-primary/20"
                onClick={() => {
                  setIsOpen(false);
                  onStart();

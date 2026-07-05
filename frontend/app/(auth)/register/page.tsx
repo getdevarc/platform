@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,13 @@ export default function RegisterPage() {
   const [step, setStep] = useState<Step>(1);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const { register, login } = useAuthStore();
+  const { register, login, isAuthenticated, loading: authLoading } = useAuthStore();
+
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      router.replace("/dashboard");
+    }
+  }, [isAuthenticated, authLoading, router]);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -153,33 +159,39 @@ export default function RegisterPage() {
           {step === 1 && (
             <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300">
               <div className="space-y-2">
-                <Label className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest pl-1">Full Name</Label>
+                <Label className="text-zinc-400 text-[10px] font-bold uppercase tracking-widest pl-1">Full Name</Label>
                 <Input 
                   placeholder="Aman Jha" 
-                  className="bg-zinc-900/50 border-white/5 h-12 rounded-2xl focus:border-primary/50" 
+                  className="bg-zinc-900/50 border-white/5 h-12 rounded-2xl focus:border-primary/50 text-white placeholder:text-zinc-600" 
                   value={formData.name}
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest pl-1">Email</Label>
+                <Label className="text-zinc-400 text-[10px] font-bold uppercase tracking-widest pl-1">Email</Label>
                 <Input 
                   type="email" 
                   placeholder="name@example.com" 
-                  className="bg-zinc-900/50 border-white/5 h-12 rounded-2xl focus:border-primary/50" 
+                  className="bg-zinc-900/50 border-white/5 h-12 rounded-2xl focus:border-primary/50 text-white placeholder:text-zinc-600" 
                   value={formData.email}
                   onChange={(e) => setFormData({...formData, email: e.target.value})}
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest pl-1">Password</Label>
+                <Label className="text-zinc-400 text-[10px] font-bold uppercase tracking-widest pl-1">Password</Label>
                 <Input 
                   type="password" 
                   placeholder="••••••••" 
-                  className="bg-zinc-900/50 border-white/5 h-12 rounded-2xl focus:border-primary/50" 
+                  className="bg-zinc-900/50 border-white/5 h-12 rounded-2xl focus:border-primary/50 text-white placeholder:text-zinc-600" 
                   value={formData.password}
                   onChange={(e) => setFormData({...formData, password: e.target.value})}
                 />
+              </div>
+              <div className="pt-2 text-center text-zinc-500 text-xs">
+                 Already have an account?{" "}
+                 <Link href="/login" className="text-primary hover:underline font-semibold">
+                    Log In
+                 </Link>
               </div>
             </div>
           )}
@@ -187,7 +199,7 @@ export default function RegisterPage() {
           {step === 2 && (
             <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
                <div className="space-y-3">
-                  <Label className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest">Experience Level</Label>
+                  <Label className="text-zinc-400 text-[10px] font-bold uppercase tracking-widest">Experience Level</Label>
                   <div className="grid grid-cols-2 gap-4">
                      {[
                        { id: "Fresher", icon: GraduationCap, label: "Fresher" },
@@ -200,10 +212,10 @@ export default function RegisterPage() {
                             "flex flex-col items-center gap-3 p-6 rounded-2xl border transition-all group",
                             formData.role === opt.id 
                               ? "bg-primary/10 border-primary text-primary" 
-                              : "bg-white/5 border-white/5 text-zinc-500 hover:bg-white/10"
+                              : "bg-white/5 border-white/5 text-zinc-400 hover:bg-white/10"
                           )}
                         >
-                           <opt.icon size={24} className={cn("transition-colors", formData.role === opt.id ? "text-primary" : "text-zinc-600 group-hover:text-zinc-400")} />
+                           <opt.icon size={24} className={cn("transition-colors", formData.role === opt.id ? "text-primary" : "text-zinc-500 group-hover:text-zinc-300")} />
                            <span className="text-xs font-bold tracking-widest">{opt.label}</span>
                         </button>
                      ))}
@@ -211,17 +223,17 @@ export default function RegisterPage() {
                </div>
 
                <div className="space-y-3">
-                  <Label className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest">Target Domain</Label>
+                  <Label className="text-zinc-400 text-[10px] font-bold uppercase tracking-widest">Target Domain</Label>
                   <div className="grid grid-cols-3 gap-2">
                      {["Frontend", "Backend", "Full Stack", "DevOps", "Data Science", "Mobile UI"].map((domain) => (
                         <button 
                           key={domain}
                           onClick={() => setFormData({...formData, targetDomain: domain})}
                           className={cn(
-                             "py-3 px-1 rounded-xl border text-[10px] font-bold uppercase transition-all tracking-tighter",
+                             "py-3 px-1 rounded-xl border text-[10px] font-bold uppercase transition-all tracking-tighter"      ,
                              formData.targetDomain === domain 
-                               ? "bg-primary border-primary text-white" 
-                               : "bg-white/5 border-white/5 text-zinc-500 hover:border-zinc-700"
+                               ? "bg-primary border-primary text-primary-foreground" 
+                               : "bg-white/5 border-white/5 text-zinc-400 hover:border-zinc-700"
                           )}
                         >
                            {domain}
@@ -235,21 +247,21 @@ export default function RegisterPage() {
           {step === 3 && (
             <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300">
                 <div className="space-y-2">
-                   <Label className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
+                   <Label className="text-zinc-400 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
                       <Target size={12} className="text-primary" /> What is your primary 3-month goal?
                    </Label>
                    <Input 
                       placeholder="e.g., Land a SDE-1 role at a startup" 
-                      className="bg-zinc-900/50 border-white/5 h-12 rounded-2xl" 
+                      className="bg-zinc-900/50 border-white/5 h-12 rounded-2xl text-white placeholder:text-zinc-600" 
                       value={formData.answers.goal}
                       onChange={(e) => setFormData({...formData, answers: {...formData.answers, goal: e.target.value}})}
                    />
                 </div>
                 <div className="space-y-2">
-                   <Label className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest">Target Dream Company</Label>
+                   <Label className="text-zinc-400 text-[10px] font-bold uppercase tracking-widest">Target Dream Company</Label>
                    <Input 
                       placeholder="e.g., Google, Stripe, or Early Stage AI startup" 
-                      className="bg-zinc-900/50 border-white/5 h-12 rounded-2xl" 
+                      className="bg-zinc-900/50 border-white/5 h-12 rounded-2xl text-white placeholder:text-zinc-600" 
                       value={formData.answers.dream_company}
                       onChange={(e) => setFormData({...formData, answers: {...formData.answers, dream_company: e.target.value}})}
                    />
@@ -258,7 +270,7 @@ export default function RegisterPage() {
                    <div className="h-8 w-8 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-500">
                       <CheckCircle2 size={16} />
                    </div>
-                   <p className="text-[10px] text-amber-200/50 font-medium uppercase tracking-widest">AI will prioritize these targets in your roadmap logic.</p>
+                   <p className="text-[10px] text-amber-200 font-medium uppercase tracking-widest">AI will prioritize these targets in your roadmap logic.</p>
                 </div>
             </div>
           )}
@@ -311,7 +323,7 @@ export default function RegisterPage() {
           
           {step === 1 && (
             <Button 
-              className="flex-1 h-12 rounded-2xl bg-primary text-white font-bold uppercase tracking-widest group shadow-lg shadow-primary/20"
+              className="flex-1 h-12 rounded-2xl bg-primary text-primary-foreground font-bold uppercase tracking-widest group shadow-lg shadow-primary/40"
               onClick={handleRegister}
               disabled={loading || !formData.email || !formData.password}
             >
@@ -322,7 +334,7 @@ export default function RegisterPage() {
 
           {step === 2 && (
              <Button 
-               className="flex-1 h-12 rounded-2xl bg-primary text-white font-bold uppercase tracking-widest"
+               className="flex-1 h-12 rounded-2xl bg-primary text-primary-foreground font-bold uppercase tracking-widest"
                onClick={handleNext}
                disabled={loading}
              >
@@ -332,7 +344,7 @@ export default function RegisterPage() {
 
           {step === 3 && (
              <Button 
-               className="flex-1 h-12 rounded-2xl bg-primary text-white font-bold uppercase tracking-widest"
+               className="flex-1 h-12 rounded-2xl bg-primary text-primary-foreground font-bold uppercase tracking-widest"
                onClick={handleProfileSubmit}
                disabled={loading || !formData.answers.goal}
              >
@@ -362,10 +374,6 @@ export default function RegisterPage() {
           )}
         </CardFooter>
       </Card>
-
-      <div className="mt-8 text-center text-zinc-600 text-xs relative z-10">
-         Already have an account? <Link href="/login" className="text-primary hover:underline">Log in</Link>
-      </div>
     </div>
   );
 }
