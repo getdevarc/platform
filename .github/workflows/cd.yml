@@ -1,0 +1,51 @@
+name: DevArc Backend CD
+
+# Note: workflow_dispatch is enabled for manual executions, but OIDC credentials authentication
+# will only succeed when run from the protected 'main' branch under the DevArcGitHubActionsCDRole IAM trust policy.
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - '.github/workflows/cd.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: cd-backend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-push-backend:
+    name: Build & Push Backend to ECR
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::057462648032:role/DevArcGitHubActionsCDRole
+          aws-region: ap-south-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and Push Backend Image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: ${{ steps.login-ecr.outputs.registry }}/devarc/backend:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
