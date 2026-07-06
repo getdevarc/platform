@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y \
 COPY package.json package-lock.json ./
 
 # Install only production dependencies, compiling native addons like bcrypt
-RUN npm ci --only=production --omit=dev
+RUN JOBS=1 npm ci --omit=dev
 
 # Stage 2: Runtime image
 FROM node:22-slim
