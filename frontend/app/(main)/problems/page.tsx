@@ -25,6 +25,12 @@ interface Problem {
   status?: "solved" | "unsolved";
 }
 
+interface Submission {
+  problem_id: string;
+  language: string;
+  status: string;
+}
+
 export default function ProblemsPage() {
   const [problems, setProblems] = useState<Problem[]>([]);
   const [solvedMap, setSolvedMap] = useState<Record<string, string[]>>({});
@@ -38,15 +44,15 @@ export default function ProblemsPage() {
       try {
         const [problemsRes, submissionsRes] = await Promise.all([
           api.get<ApiResponse<Problem[]>>("/problems"),
-          api.get("/submissions")
+          api.get<ApiResponse<Submission[]>>("/submissions")
         ]);
         
         setProblems(problemsRes.data.data || []);
         
         const userSubmissions = submissionsRes.data.data || [];
-        const acceptedSubmissions = userSubmissions.filter((s: any) => s.status === "accepted");
+        const acceptedSubmissions = userSubmissions.filter((s: Submission) => s.status === "accepted");
         const mapping: Record<string, string[]> = {};
-        acceptedSubmissions.forEach((s: any) => {
+        acceptedSubmissions.forEach((s: Submission) => {
           if (!mapping[s.problem_id]) {
             mapping[s.problem_id] = [];
           }
@@ -136,12 +142,12 @@ export default function ProblemsPage() {
 
               {/* Status Filters */}
               <div className="flex items-center gap-1.5 bg-zinc-900/40 p-1 rounded-full border border-white/5">
-                {["all", "new", "solved"].map((status) => (
+                {(["all", "new", "solved"] as const).map((status) => (
                   <Button
                     key={status}
                     variant={statusFilter === status ? "default" : "ghost"}
                     size="sm"
-                    onClick={() => setStatusFilter(status as any)}
+                    onClick={() => setStatusFilter(status)}
                     className={cn(
                       "rounded-full h-8 px-3.5 text-[10px] font-bold uppercase tracking-wider",
                       statusFilter === status 

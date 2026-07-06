@@ -115,7 +115,7 @@ export default function CareerPage() {
       roadmapCategories.forEach(cat => {
         cat.nodes.forEach(node => {
           const val = localStorage.getItem(`roadmap_node_status_${node.id}`) || "todo";
-          savedStatuses[node.id] = val as any;
+          savedStatuses[node.id] = val as "todo" | "progress" | "completed";
         });
       });
       setNodeStatuses(savedStatuses);
@@ -520,7 +520,7 @@ Build a live developer metric dashboard to demonstrate frontend and backend capa
                      </div>
                      <div className="space-y-1">
                         <h3 className="font-bold text-white uppercase tracking-widest">Next Milestone</h3>
-                        <p className="text-xs text-zinc-500">Solve 3 Medium problems in "Graphs" to unlock the Junior Architect certificate.</p>
+                        <p className="text-xs text-zinc-500">Solve 3 Medium problems in &quot;Graphs&quot; to unlock the Junior Architect certificate.</p>
                      </div>
                      <Button className="w-full h-11 bg-primary text-primary-foreground font-bold rounded-xl shadow-lg hover:opacity-90 transition-all font-sans text-xs uppercase tracking-widest">
                         Launch Graph Hub

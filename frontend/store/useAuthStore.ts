@@ -8,7 +8,7 @@ interface User {
   role?: string;
   target_domain?: string;
   resume_text?: string;
-  career_answers?: any;
+  career_answers?: Record<string, unknown>;
 }
 
 interface AuthState {
@@ -18,8 +18,8 @@ interface AuthState {
   loading: boolean;
   onboardingComplete: boolean;
 
-  login: (credentials: any) => Promise<void>;
-  register: (data: any) => Promise<void>;
+  login: (credentials: Record<string, unknown>) => Promise<void>;
+  register: (data: Record<string, unknown>) => Promise<void>;
   logout: () => void;
   checkAuth: () => Promise<void>;
 }
@@ -31,7 +31,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   loading: true,
   onboardingComplete: false,
 
-  login: async (credentials) => {
+  login: async (credentials: Record<string, unknown>) => {
     set({ loading: true });
     try {
       const res = await api.post<ApiResponse<{ token: string }>>("/auth/login", credentials);
@@ -57,10 +57,10 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-  register: async (data) => {
+  register: async (data: Record<string, unknown>) => {
     set({ loading: true });
     try {
-      await api.post<ApiResponse<any>>("/auth/register", data);
+      await api.post<ApiResponse<Record<string, unknown>>>("/auth/register", data);
       set({ loading: false });
     } catch (error) {
       set({ loading: false });
@@ -92,9 +92,10 @@ export const useAuthStore = create<AuthState>((set) => ({
         const user = res.data.data;
         const onboardingComplete = !!(user.role && user.target_domain);
         set({ user, isAuthenticated: true, loading: false, onboardingComplete });
-      } catch (err: any) {
+      } catch (err) {
         clearTimeout(timeout);
-        if (err.name === "AbortError" || err.code === "ERR_CANCELED") {
+        const errObject = err as Record<string, unknown> | null;
+        if (errObject?.name === "AbortError" || errObject?.code === "ERR_CANCELED") {
           // Backend timed out — treat as unauthenticated
           console.warn("[DevArc] /auth/me timed out after 5s, logging out.");
         }

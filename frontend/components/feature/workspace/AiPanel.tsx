@@ -1,9 +1,10 @@
 "use client";
 
 import { useRef, useEffect } from "react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { useWorkspaceStore } from "@/store/useWorkspaceStore";
-import { Sparkles, Brain, Code2, Lightbulb, Loader2 } from "lucide-react";
+import { Sparkles, Brain, Code2, Lightbulb, Loader2, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface MessageProps {
@@ -15,7 +16,7 @@ interface MessageProps {
 function ChatMessage({ role, content, type }: MessageProps) {
   const isAi = role === "ai";
   
-  const iconMap: Record<string, any> = {
+  const iconMap: Record<string, LucideIcon> = {
     hint: Lightbulb,
     explanation: Brain,
     review: Code2,
@@ -63,11 +64,7 @@ export function AiPanel() {
         <h2 className="font-semibold text-sm">AI Mentor Chat</h2>
       </div>
 
-      <div 
-        className="flex-1 overflow-y-auto px-4 py-2 space-y-4 scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-transparent" 
-        ref={scrollRef}
-        style={{ contentVisibility: "auto" }}
-      >
+      <ScrollArea className="flex-1 px-4" ref={scrollRef}>
         <div className="flex flex-col">
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-[400px] text-center space-y-4 px-6 text-muted-foreground">
@@ -97,7 +94,7 @@ export function AiPanel() {
             </div>
           )}
         </div>
-      </div>
+      </ScrollArea>
     </div>
   );
 }

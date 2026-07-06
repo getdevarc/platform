@@ -29,7 +29,7 @@ export function SolveInsightsOverlay() {
             <div>
               <DialogTitle className="text-2xl font-bold">Problem Solved!</DialogTitle>
               <DialogDescription className="text-base text-muted-foreground">
-                Your Solve Insights are ready. Here's how you performed.
+                Your Solve Insights are ready. Here&apos;s how you performed.
               </DialogDescription>
             </div>
           </div>
@@ -44,7 +44,7 @@ export function SolveInsightsOverlay() {
                 AI Performance Analysis
               </div>
               <p className="text-foreground leading-relaxed italic">
-                "{insights.analysis || "Excellent solve! You showed strong pattern recognition and efficient implementation."}"
+                &quot;{insights.analysis || "Excellent solve! You showed strong pattern recognition and efficient implementation."}&quot;
               </p>
             </div>
 
