@@ -6,6 +6,14 @@ interface Message {
   type?: "hint" | "explanation" | "review";
 }
 
+export interface SolveInsights {
+  analysis?: string;
+  strengths?: string[];
+  weaknesses?: string[];
+  topics?: string[];
+  recommended_problems?: string[];
+}
+
 interface WorkspaceState {
   code: string;
   language: string;
@@ -13,19 +21,19 @@ interface WorkspaceState {
   problemId: string | null;
   messages: Message[];
   status: "idle" | "running" | "submitting" | "analyzing";
-  result: any | null;
-  insights: any | null;
+  result: unknown | null;
+  insights: SolveInsights | null;
   score: number;
   penalty: number;
-  
+
   setCode: (code: string) => void;
   setLanguage: (language: string) => void;
   setSessionId: (id: string | null) => void;
   setProblemId: (id: string | null) => void;
   addMessage: (message: Message) => void;
   setStatus: (status: WorkspaceState["status"]) => void;
-  setResult: (result: any) => void;
-  setInsights: (insights: any) => void;
+  setResult: (result: unknown) => void;
+  setInsights: (insights: SolveInsights | null) => void;
   resetWorkspace: () => void;
 }
 
@@ -63,12 +71,12 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
   setStatus: (status) => set({ status }),
   setResult: (result) => set({ result }),
   setInsights: (insights) => set({ insights }),
-  resetWorkspace: () => set({ 
-    code: "", 
-    sessionId: null, 
-    messages: [], 
-    status: "idle", 
-    result: null, 
+  resetWorkspace: () => set({
+    code: "",
+    sessionId: null,
+    messages: [],
+    status: "idle",
+    result: null,
     insights: null,
     score: 100,
     penalty: 0

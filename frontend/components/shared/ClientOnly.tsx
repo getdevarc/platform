@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState, ReactNode } from "react";
+import { useSyncExternalStore, ReactNode } from "react";
+
+const emptySubscribe = () => () => {};
 
 /**
  * ClientOnly
@@ -8,13 +10,13 @@ import { useEffect, useState, ReactNode } from "react";
  * window/document/browser APIs (like Recharts or Monaco).
  */
 export function ClientOnly({ children }: { children: ReactNode }) {
-  const [hasMounted, setHasMounted] = useState(false);
+  const isServer = useSyncExternalStore(
+    emptySubscribe,
+    () => false,
+    () => true
+  );
 
-  useEffect(() => {
-    setHasMounted(true);
-  }, []);
-
-  if (!hasMounted) return null;
+  if (isServer) return null;
 
   return <>{children}</>;
 }

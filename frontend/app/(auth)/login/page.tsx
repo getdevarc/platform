@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Button } from "@/components/ui/button";
@@ -14,14 +14,8 @@ import Link from "next/link";
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const { login, loading, isAuthenticated } = useAuthStore();
+  const { login, loading } = useAuthStore();
   const router = useRouter();
-
-  useEffect(() => {
-    if (!loading && isAuthenticated) {
-      router.replace("/dashboard");
-    }
-  }, [isAuthenticated, loading, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,8 +23,9 @@ export default function LoginPage() {
       await login({ email, password });
       toast.success("Welcome back to DevArc!");
       router.push("/");
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || "Login failed. Please check your credentials.");
+    } catch (err) {
+      const error = err as { response?: { data?: { error?: string } } };
+      toast.error(error.response?.data?.error || "Login failed. Please check your credentials.");
     }
   };
 
@@ -88,7 +83,7 @@ export default function LoginPage() {
               Log In
             </Button>
             <p className="text-sm text-center text-zinc-500">
-              Don't have an account?{" "}
+              Don&apos;t have an account?{" "}
               <Link href="/register" className="text-primary hover:underline font-medium">
                 Register now
               </Link>

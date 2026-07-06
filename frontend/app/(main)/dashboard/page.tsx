@@ -39,9 +39,29 @@ import { cn } from "@/lib/utils";
 
 import { ClientOnly } from "@/components/shared/ClientOnly";
 
+interface InsightAttempt {
+  language: string;
+  created_at: string;
+  passed_cases: number;
+  total_cases: number;
+  score: number;
+}
+
+interface RecentInsight {
+  id: string;
+  problem_id: string;
+  problem_title: string;
+  problem_difficulty: string;
+  analysis_text: string;
+  status: string;
+  solved_count: number;
+  languages: string[];
+  attempts?: InsightAttempt[];
+}
+
 interface DashboardData {
   stats: { name: string; value: string; color: string }[];
-  recentInsights: any[];
+  recentInsights: RecentInsight[];
   skillMastery?: { language: string; count: number }[];
 }
 
@@ -51,7 +71,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   // Modal Details & Reattempt prompt state hooks
-  const [selectedFeedInsight, setSelectedFeedInsight] = useState<any | null>(null);
+  const [selectedFeedInsight, setSelectedFeedInsight] = useState<RecentInsight | null>(null);
   const [showReattemptConfirm, setShowReattemptConfirm] = useState<string | null>(null);
 
   // Mock Radar Data for Mastery Visualization
@@ -181,7 +201,7 @@ export default function DashboardPage() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {data?.recentInsights.map((insight: any) => (
+                    {data?.recentInsights.map((insight: RecentInsight) => (
                       <div key={insight.id} className="p-5 rounded-2xl bg-zinc-900/30 border border-white/5 hover:border-primary/20 transition-all group">
                         <div className="flex items-start justify-between">
                            <div 
@@ -352,7 +372,7 @@ export default function DashboardPage() {
                  <div className="space-y-3">
                     <h4 className="text-[10px] font-bold text-zinc-450 uppercase tracking-widest">History of Submissions</h4>
                     <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1">
-                       {selectedFeedInsight.attempts && selectedFeedInsight.attempts.map((att: any, idx: number) => (
+                       {selectedFeedInsight.attempts && selectedFeedInsight.attempts.map((att: InsightAttempt, idx: number) => (
                           <div key={idx} className="p-3 rounded-xl bg-zinc-900/20 border border-white/5 flex items-center justify-between text-xs">
                              <div className="space-y-0.5">
                                 <p className="font-bold text-white uppercase tracking-wider text-[10px]">{att.language}</p>
@@ -372,7 +392,7 @@ export default function DashboardPage() {
                  <div className="p-4 bg-primary/5 border border-primary/10 rounded-2xl">
                     <p className="text-[10px] text-primary font-bold uppercase tracking-widest mb-1.5">AI Feedback Analysis</p>
                     <p className="text-xs text-zinc-350 leading-relaxed italic">
-                       "{selectedFeedInsight.analysis_text}"
+                       &quot;{selectedFeedInsight.analysis_text}&quot;
                     </p>
                  </div>
               </CardContent>

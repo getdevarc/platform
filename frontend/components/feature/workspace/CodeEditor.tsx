@@ -1,6 +1,6 @@
 "use client";
 
-import Editor from "@monaco-editor/react";
+import Editor, { Monaco } from "@monaco-editor/react";
 import { useWorkspaceStore } from "@/store/useWorkspaceStore";
 
 interface CodeEditorProps {
@@ -14,7 +14,7 @@ export function CodeEditor({
 }: CodeEditorProps) {
   const { code, setCode } = useWorkspaceStore();
 
-  const handleEditorWillMount = (monaco: any) => {
+  const handleEditorWillMount = (monaco: Monaco) => {
     // Disable intrusive red error validation for JS/TS
     monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
       noSemanticValidation: true,

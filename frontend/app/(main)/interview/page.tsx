@@ -27,6 +27,36 @@ import { cn } from "@/lib/utils";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 
+interface TestCaseResult {
+  input: string;
+  expected: string;
+  output: string;
+  passed: boolean;
+}
+
+interface Evaluation {
+  verdict: string;
+  logicScore: number;
+  codeQualityScore: number;
+  communicationScore: number;
+  totalScore: number;
+  overallFeedback?: string;
+  feedback?: string;
+  strengths: string[];
+  weaknesses: string[];
+  testCases?: TestCaseResult[];
+}
+
+interface CompletedQuestion {
+  index: number;
+  title: string;
+  questionText: string;
+  code: string;
+  language: string;
+  evaluation?: Evaluation;
+  timeTaken: number;
+}
+
 interface Message {
   role: "user" | "assistant";
   content: string;
@@ -38,7 +68,7 @@ interface InterviewSession {
   type?: string;
   question: string;
   transcript: Message[];
-  evaluation?: any;
+  evaluation?: Evaluation;
   created_at?: string;
 }
 
@@ -69,12 +99,12 @@ export default function InterviewPage() {
   const [activeTestTab, setActiveTestTab] = useState(0);
 
   // Multi-question solve tracking states
-  const [completedQuestions, setCompletedQuestions] = useState<any[]>([]);
+  const [completedQuestions, setCompletedQuestions] = useState<CompletedQuestion[]>([]);
   const [activeIndex, setActiveIndex] = useState<number>(0);
   const [currentQuestionText, setCurrentQuestionText] = useState<string>("");
   const [isQuestionLocked, setIsQuestionLocked] = useState<boolean>(false);
   const [isTimerRunning, setIsTimerRunning] = useState<boolean>(true);
-  const [selectedCompletedQuestion, setSelectedCompletedQuestion] = useState<any | null>(null);
+  const [selectedCompletedQuestion, setSelectedCompletedQuestion] = useState<CompletedQuestion | null>(null);
   
   // Draggable Split Panel States
   const [panelHeight, setPanelHeight] = useState(230);
@@ -121,7 +151,7 @@ export default function InterviewPage() {
         const localQText = localStorage.getItem(`current_question_${activeId}`);
 
         if (localCode) setCode(localCode);
-        if (localLang) setLanguage(localLang as any);
+        if (localLang) setLanguage(localLang as "javascript" | "python" | "cpp" | "java");
         if (localCompleted) setCompletedQuestions(JSON.parse(localCompleted));
         if (localIndex) setActiveIndex(parseInt(localIndex, 10));
         if (localLocked === "true") {
@@ -257,7 +287,10 @@ export default function InterviewPage() {
 
   const downloadReport = () => {
     if (!session || !session.evaluation) return;
-    const doc = new (jsPDF as any)();
+    const doc = new jsPDF() as jsPDF & {
+      autoTable: (options: Record<string, unknown>) => void;
+      lastAutoTable?: { finalY: number };
+    };
     const evalData = session.evaluation;
 
     doc.setFontSize(22);
@@ -287,9 +320,9 @@ export default function InterviewPage() {
     if (evalData.overallFeedback) {
       doc.setFontSize(14);
       doc.setTextColor(0);
-      doc.text("Overall Feedback:", 20, (doc as any).lastAutoTable.finalY + 15);
+      doc.text("Overall Feedback:", 20, (doc.lastAutoTable?.finalY ?? 70) + 15);
       doc.setFontSize(10);
-      doc.text(evalData.overallFeedback, 20, (doc as any).lastAutoTable.finalY + 25, { maxWidth: 170 });
+      doc.text(evalData.overallFeedback, 20, (doc.lastAutoTable?.finalY ?? 70) + 25, { maxWidth: 170 });
     }
 
     completedQuestions.forEach((cq, index) => {
@@ -301,7 +334,7 @@ export default function InterviewPage() {
       doc.setFontSize(10);
       doc.setTextColor(100);
       doc.text(`Time Elapsed: ${formatTime(cq.timeTaken)}`, 20, 30);
-      doc.text(`Validation Passrate: ${cq.evaluation?.testCases?.filter((t: any) => t.passed).length || 0}/${cq.evaluation?.testCases?.length || 3} Cases`, 20, 38);
+      doc.text(`Validation Passrate: ${cq.evaluation?.testCases?.filter((t: TestCaseResult) => t.passed).length || 0}/${cq.evaluation?.testCases?.length || 3} Cases`, 20, 38);
 
       doc.setFontSize(12);
       doc.setTextColor(0);
@@ -714,7 +747,7 @@ export default function InterviewPage() {
                 <div className="p-4 bg-zinc-900/30 border border-white/5 rounded-2xl">
                    <span className="text-[9px] font-bold text-[#fafafa] uppercase tracking-widest block mb-1">Test Cases passed</span>
                    <span className="text-sm font-bold text-emerald-500 font-mono">
-                      {selectedCompletedQuestion.evaluation?.testCases?.filter((t: any) => t.passed).length || 0} / {selectedCompletedQuestion.evaluation?.testCases?.length || 3} Passed
+                      {selectedCompletedQuestion.evaluation?.testCases?.filter((t: TestCaseResult) => t.passed).length || 0} / {selectedCompletedQuestion.evaluation?.testCases?.length || 3} Passed
                    </span>
                 </div>
              </div>
@@ -1012,7 +1045,7 @@ export default function InterviewPage() {
                     <div className="space-y-3 animate-in fade-in duration-300">
                        <p className="text-[11px] text-zinc-400 italic font-sans">
                           <strong className="text-zinc-300 uppercase tracking-widest text-[9px] mr-1.5 not-italic select-none font-sans">AI Mentor Feedback:</strong> 
-                          "{testResults.feedback}"
+                          &quot;{testResults.feedback}&quot;
                        </p>
                        
                        <div className="grid grid-cols-2 gap-4">

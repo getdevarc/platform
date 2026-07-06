@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { api, ApiResponse } from "@/lib/api";
-import { WorkspaceContent } from "@/components/feature/workspace/WorkspaceContent";
+import { WorkspaceContent, Problem } from "@/components/feature/workspace/WorkspaceContent";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { ClientOnly } from "@/components/shared/ClientOnly";
@@ -11,13 +11,13 @@ import { ClientOnly } from "@/components/shared/ClientOnly";
 export default function SolvePage() {
   const params = useParams();
   const problemId = params.id as string;
-  const [problem, setProblem] = useState<any>(null);
+  const [problem, setProblem] = useState<Problem | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchProblem = async () => {
       try {
-        const res = await api.get<ApiResponse<any>>(`/problems/${problemId}`);
+        const res = await api.get<ApiResponse<Problem>>(`/problems/${problemId}`);
         setProblem(res.data.data);
       } catch (err) {
         toast.error("Failed to load problem. Please try again.");
