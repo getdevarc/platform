@@ -1,4 +1,4 @@
-name: DevArc Backend CD
+name: DevArc CD
 
 # Note: workflow_dispatch is enabled for manual executions, but OIDC credentials authentication
 # will only succeed when run from the protected 'main' branch under the DevArcGitHubActionsCDRole IAM trust policy.
@@ -17,8 +17,8 @@ permissions:
   id-token: write
 
 concurrency:
-  group: cd-backend-${{ github.ref }}
-  cancel-in-progress: true
+  group: cd-production-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   build-push-backend:
@@ -82,3 +82,276 @@ jobs:
           tags: ${{ steps.login-ecr.outputs.registry }}/devarc/frontend:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  deploy-production:
+    name: Deploy Production via SSM
+    needs:
+      - build-push-backend
+      - build-push-frontend
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::057462648032:role/DevArcGitHubActionsCDRole
+          aws-region: ap-south-1
+
+      - name: Create Remote Deployment Script
+        run: |
+          cat << 'EOF' > deploy.sh
+          #!/usr/bin/env bash
+          set -Eeuo pipefail
+
+          AWS_REGION="ap-south-1"
+          AWS_ACCOUNT_ID="057462648032"
+          REGISTRY="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+
+          # RELEASE_SHA is dynamically prepended at caller scope
+          BACKEND_IMAGE="${REGISTRY}/devarc/backend:${RELEASE_SHA}"
+          FRONTEND_IMAGE="${REGISTRY}/devarc/frontend:${RELEASE_SHA}"
+
+          BACKEND_CONTAINER="devarc-backend"
+          FRONTEND_CONTAINER="devarc-frontend"
+          BACKEND_ENV_FILE="/opt/devarc/backend.env"
+
+          DEPLOYMENT_STARTED=false
+
+          check_health() {
+            echo "Verifying local backend health status..."
+            local backend_success=false
+            for i in $(seq 1 30); do
+              if curl -fsS http://127.0.0.1:5050/health &>/dev/null; then
+                backend_success=true
+                break
+              fi
+              sleep 2
+            done
+            if [ "$backend_success" != "true" ]; then
+              echo "Error: Local backend health check failed." >&2
+              return 1
+            fi
+
+            echo "Verifying local frontend health status..."
+            local frontend_success=false
+            for i in $(seq 1 30); do
+              if curl -fsS http://127.0.0.1:3000/ &>/dev/null; then
+                frontend_success=true
+                break
+              fi
+              sleep 2
+            done
+            if [ "$frontend_success" != "true" ]; then
+              echo "Error: Local frontend health check failed." >&2
+              return 1
+            fi
+
+            echo "Verifying external backend health status..."
+            local ext_backend_success=false
+            for i in $(seq 1 10); do
+              if curl -fsS https://api.getdevarc.com/health &>/dev/null; then
+                ext_backend_success=true
+                break
+              fi
+              sleep 3
+            done
+            if [ "$ext_backend_success" != "true" ]; then
+              echo "Error: External backend health check failed." >&2
+              return 1
+            fi
+
+            echo "Verifying external frontend health status..."
+            local ext_frontend_success=false
+            for i in $(seq 1 10); do
+              if curl -fsS https://getdevarc.com/ &>/dev/null; then
+                ext_frontend_success=true
+                break
+              fi
+              sleep 3
+            done
+            if [ "$ext_frontend_success" != "true" ]; then
+              echo "Error: External frontend health check failed." >&2
+              return 1
+            fi
+
+            echo "All health checks passed successfully!"
+            return 0
+          }
+
+          rollback() {
+            local exit_code=$?
+            trap - ERR
+            set +e
+            echo "Deployment failed with exit code $exit_code. Triggering rollback..."
+
+            if [ "$DEPLOYMENT_STARTED" != "true" ]; then
+              echo "Deployment was not started yet. No container rollback required."
+              exit "$exit_code"
+            fi
+
+            echo "Attempting to roll back containers to original releases..."
+
+            docker rm -f "$BACKEND_CONTAINER" 2>/dev/null || true
+            docker rm -f "$FRONTEND_CONTAINER" 2>/dev/null || true
+
+            echo "Recreating previous backend container with $PREVIOUS_BACKEND_IMAGE..."
+            docker run -d \
+              --name "$BACKEND_CONTAINER" \
+              --restart unless-stopped \
+              --env-file "$BACKEND_ENV_FILE" \
+              -p 127.0.0.1:5050:5050 \
+              "$PREVIOUS_BACKEND_IMAGE"
+
+            echo "Recreating previous frontend container with $PREVIOUS_FRONTEND_IMAGE..."
+            docker run -d \
+              --name "$FRONTEND_CONTAINER" \
+              --restart unless-stopped \
+              -p 127.0.0.1:3000:3000 \
+              "$PREVIOUS_FRONTEND_IMAGE"
+
+            echo "Running health checks after rollback..."
+            if check_health; then
+               echo "Rollback health check succeeded."
+            else
+               echo "Rollback health check FAILED." >&2
+            fi
+
+            exit "$exit_code"
+          }
+
+          trap rollback ERR
+
+          echo "Running preflight checks..."
+          for cmd in docker aws curl; do
+            if ! command -v "$cmd" &>/dev/null; then
+              echo "Error: Required command '$cmd' is not installed." >&2
+              exit 1
+            fi
+          done
+
+          if [ ! -r "$BACKEND_ENV_FILE" ]; then
+            echo "Error: Backend environment file '$BACKEND_ENV_FILE' does not exist or is not readable." >&2
+            exit 1
+          fi
+
+          if ! docker inspect "$BACKEND_CONTAINER" &>/dev/null; then
+            echo "Error: Container '$BACKEND_CONTAINER' does not exist." >&2
+            exit 1
+          fi
+
+          if ! docker inspect "$FRONTEND_CONTAINER" &>/dev/null; then
+            echo "Error: Container '$FRONTEND_CONTAINER' does not exist." >&2
+            exit 1
+          fi
+
+          PREVIOUS_BACKEND_IMAGE=$(docker inspect --format='{{.Config.Image}}' "$BACKEND_CONTAINER")
+          PREVIOUS_FRONTEND_IMAGE=$(docker inspect --format='{{.Config.Image}}' "$FRONTEND_CONTAINER")
+
+          if [ -z "$PREVIOUS_BACKEND_IMAGE" ] || [ -z "$PREVIOUS_FRONTEND_IMAGE" ]; then
+            echo "Error: Captured previous image reference is empty." >&2
+            exit 1
+          fi
+
+          echo "Previous Backend Image: $PREVIOUS_BACKEND_IMAGE"
+          echo "Previous Frontend Image: $PREVIOUS_FRONTEND_IMAGE"
+
+          echo "Authenticating Docker to Amazon ECR..."
+          aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$REGISTRY"
+
+          echo "Pulling new backend image: $BACKEND_IMAGE..."
+          docker pull "$BACKEND_IMAGE"
+
+          echo "Pulling new frontend image: $FRONTEND_IMAGE..."
+          docker pull "$FRONTEND_IMAGE"
+
+          echo "Preflight checks succeeded. Starting container deployment..."
+          DEPLOYMENT_STARTED=true
+
+          echo "Stopping and removing existing containers..."
+          docker rm -f "$BACKEND_CONTAINER"
+          docker rm -f "$FRONTEND_CONTAINER"
+
+          echo "Launching new backend container..."
+          docker run -d \
+            --name "$BACKEND_CONTAINER" \
+            --restart unless-stopped \
+            --env-file "$BACKEND_ENV_FILE" \
+            -p 127.0.0.1:5050:5050 \
+            "$BACKEND_IMAGE"
+
+          echo "Launching new frontend container..."
+          docker run -d \
+            --name "$FRONTEND_CONTAINER" \
+            --restart unless-stopped \
+            -p 127.0.0.1:3000:3000 \
+            "$FRONTEND_IMAGE"
+
+          echo "Running post-deployment health checks..."
+          check_health
+
+          trap - ERR
+          echo "Deployment of release $RELEASE_SHA successfully completed!"
+          exit 0
+          EOF
+          chmod +x deploy.sh
+
+      - name: Send SSM Command
+        id: send-command
+        run: |
+          jq -n \
+            --arg sha "${{ github.sha }}" \
+            --arg script "$(cat deploy.sh)" \
+            '{"commands": ["export RELEASE_SHA=\"" + $sha + "\"\n" + $script]}' \
+            > ssm_params.json
+
+          cmd_json=$(aws ssm send-command \
+            --instance-ids "i-0f938e172e2e57482" \
+            --document-name "AWS-RunShellScript" \
+            --parameters file://ssm_params.json)
+
+          command_id=$(echo "$cmd_json" | jq -r '.Command.CommandId')
+          echo "command_id=$command_id" >> "$GITHUB_OUTPUT"
+          echo "Dispatched SSM Command ID: $command_id"
+
+      - name: Validate Command ID
+        run: |
+          command_id="${{ steps.send-command.outputs.command_id }}"
+
+          if [ -z "$command_id" ] || [ "$command_id" = "null" ]; then
+            echo "Error: Command ID is empty or null!"
+            exit 1
+          fi
+
+      - name: Track Deployment Execution
+        run: |
+          echo "Waiting for command ${{ steps.send-command.outputs.command_id }} to execute..."
+          aws ssm wait command-executed \
+            --command-id "${{ steps.send-command.outputs.command_id }}" \
+            --instance-id "i-0f938e172e2e57482" || waiter_failed=true
+
+          invocation=$(aws ssm get-command-invocation \
+            --command-id "${{ steps.send-command.outputs.command_id }}" \
+            --instance-id "i-0f938e172e2e57482")
+
+          status=$(echo "$invocation" | jq -r '.Status')
+          response_code=$(echo "$invocation" | jq -r '.ResponseCode')
+          stdout=$(echo "$invocation" | jq -r '.StandardOutputContent')
+          stderr=$(echo "$invocation" | jq -r '.StandardErrorContent')
+
+          echo "=== Invocation Status ==="
+          echo "$status"
+          echo "=== Response Code ==="
+          echo "$response_code"
+          echo "=== Standard Output ==="
+          echo "$stdout"
+          echo "=== Standard Error ==="
+          echo "$stderr"
+
+          if [ "${waiter_failed:-false}" = "true" ] || [ "$status" != "Success" ] || [ "$response_code" != "0" ]; then
+            echo "Error: SSM Deployment failed!"
+            exit 1
+          fi
