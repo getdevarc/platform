@@ -748,7 +748,7 @@ export default function InterviewPage() {
                   <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block select-none">Primary AI Metric</span>
                   <select
                     value={targetMetric}
-                    onChange={(e) => setTargetMetric(e.target.value as any)}
+                    onChange={(e) => setTargetMetric(e.target.value as "Performance" | "Clean Code" | "Scalability")}
                     className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 text-xs text-zinc-900 dark:text-zinc-300 rounded-xl p-3 outline-none cursor-pointer focus:border-primary/50 transition-all font-mono"
                   >
                     <option value="Performance">⚡ Performance Optimization</option>

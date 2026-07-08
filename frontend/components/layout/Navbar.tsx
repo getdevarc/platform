@@ -42,7 +42,10 @@ export function Navbar() {
   const [hasActiveInterview, setHasActiveInterview] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    const timer = setTimeout(() => {
+      setMounted(true);
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {

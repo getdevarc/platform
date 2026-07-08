@@ -330,10 +330,10 @@ export default function LandingPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
                   {/* Mock Code Editor */}
                   <div className="lg:col-span-8 bg-zinc-950 p-4 rounded-xl border border-white/5 min-h-[160px] text-xs text-zinc-400 leading-normal space-y-2">
-                    <p className="text-zinc-600">// Press Hint above for context-aware recommendations</p>
+                    <p className="text-zinc-600">{"// Press Hint above for context-aware recommendations"}</p>
                     <p><span className="text-purple-400">function</span> <span className="text-yellow-400">lengthOfLongestSubstring</span>(s) &#123;</p>
                     <p className="pl-4"><span className="text-purple-400">let</span> map = <span className="text-purple-400">new</span> <span className="text-blue-400">Map</span>();</p>
-                    <p className="pl-4"><span className="text-purple-400">let</span> start = <span className="text-primary font-bold animate-pulse">0</span>; <span className="text-emerald-500">// AI recommends sliding window pointers</span></p>
+                    <p className="pl-4"><span className="text-purple-400">let</span> start = <span className="text-primary font-bold animate-pulse">0</span>; <span className="text-emerald-500">{"// AI recommends sliding window pointers"}</span></p>
                     <p className="pl-4">...</p>
                     <p>&#125;</p>
                   </div>
@@ -345,7 +345,7 @@ export default function LandingPage() {
                       <span className="text-[9px] font-extrabold uppercase tracking-widest">AI Mentor Diagnostic</span>
                     </div>
                     <p className="text-[10px] text-zinc-350 leading-relaxed">
-                      "I notice you initialized your sliding pointer correctly. Focus next on updating the character map with indices to bypass duplicate sweeps."
+                      &quot;I notice you initialized your sliding pointer correctly. Focus next on updating the character map with indices to bypass duplicate sweeps.&quot;
                     </p>
                     <div className="flex gap-1.5">
                       <span className="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded bg-primary/10 text-primary">Hint Provided</span>
@@ -371,8 +371,8 @@ export default function LandingPage() {
                   <div className="p-4 rounded-xl border border-white/5 bg-zinc-950 flex flex-col justify-between min-h-[150px]">
                     <div className="space-y-2">
                       <p className="text-[9px] text-zinc-550 uppercase tracking-widest font-bold">Interviewer Question</p>
-                      <p className="text-xs text-white leading-relaxed">
-                        "Your array-based traversal looks complete. Can you tell me how the space complexity is affected if we transition from a recursive setup to an iterative stack?"
+                      <p className="text-xs text-zinc-350 leading-relaxed">
+                        &quot;Your array-based traversal looks complete. Can you tell me how the space complexity is affected if we transition from a recursive setup to an iterative stack?&quot;
                       </p>
                     </div>
                     <div className="flex items-center gap-1 mt-4">
@@ -381,7 +381,7 @@ export default function LandingPage() {
                           key={i} 
                           className="h-6 w-1 bg-primary rounded-full transition-all" 
                           style={{ 
-                            height: `${3 + Math.sin(i + Math.random()) * 20}px`,
+                            height: `${3 + Math.sin(i) * 20}px`,
                             opacity: 0.15 + (i % 3) * 0.25 
                           }} 
                         />
@@ -440,7 +440,7 @@ export default function LandingPage() {
         <div className="max-w-3xl mx-auto space-y-10">
           <div className="text-center space-y-2">
             <h2 className="text-2xl font-bold tracking-tight">Frequently Asked Questions</h2>
-            <p className="text-xs text-zinc-500">Everything you need to know about DevArc's workspace features.</p>
+            <p className="text-xs text-zinc-500">Everything you need to know about DevArc&apos;s workspace features.</p>
           </div>
 
           <div className="space-y-3">

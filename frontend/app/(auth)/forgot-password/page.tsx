@@ -76,8 +76,9 @@ export default function ForgotPasswordPage() {
       await api.post("/auth/forgot-password", { email });
       toast.success("Verification code sent to your email!");
       setStep(2);
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || "Failed to request code. Check email.");
+    } catch (err) {
+      const errorMsg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || "Failed to request code. Check email.";
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -97,8 +98,9 @@ export default function ForgotPasswordPage() {
       await api.post("/auth/reset-password", { email, otp, newPassword });
       toast.success("Password reset successful Login with your new password.");
       router.push("/login");
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || "Password reset failed. Verify OTP code.");
+    } catch (err) {
+      const errorMsg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || "Password reset failed. Verify OTP code.";
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }

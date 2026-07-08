@@ -15,7 +15,10 @@ export default function SettingsPage() {
   const [sessionWarnings, setSessionWarnings] = useState(true);
 
   useEffect(() => {
-    setMounted(true);
+    const timer = setTimeout(() => {
+      setMounted(true);
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   const handleSave = () => {

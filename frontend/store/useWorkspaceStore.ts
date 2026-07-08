@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-interface Message {
+export interface Message {
   role: "user" | "ai";
   content: string;
   type?: "hint" | "explanation" | "review";

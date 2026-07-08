@@ -3,13 +3,18 @@ import { ProblemDescription } from "./ProblemDescription";
 import { CodeEditor } from "./CodeEditor";
 import { AiPanel } from "./AiPanel";
 import { InstructionPopup } from "./InstructionPopup";
-import { useWorkspaceStore } from "@/store/useWorkspaceStore";
+import { useWorkspaceStore, Message as WorkspaceMessage } from "@/store/useWorkspaceStore";
+
+export interface PendingSession {
+  sessionId: string;
+  score: number;
+}
 import { Button } from "@/components/ui/button";
 import { Lightbulb, Brain, Code2, Terminal, Play, Send, ChevronLeft, Clock, Sparkles } from "lucide-react";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { Group as PanelGroup, Panel, Separator as PanelResizeHandle, type PanelImperativeHandle as ImperativePanelHandle } from "react-resizable-panels";
+import { Group as PanelGroup, Panel, Separator as PanelResizeHandle, type PanelImperativeHandle as ImperativePanelHandle, Layout } from "react-resizable-panels";
 
 export interface Problem {
   id: string;
@@ -108,7 +113,7 @@ export function WorkspaceContent({ problem }: { problem: Problem }) {
   const [referrer, setReferrer] = useState("/problems");
   
   const [showSessionPrompt, setShowSessionPrompt] = useState(false);
-  const [pendingSession, setPendingSession] = useState<any>(null);
+  const [pendingSession, setPendingSession] = useState<PendingSession | null>(null);
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [sessionStartTime, setSessionStartTime] = useState<string | null>(null);
   const [activeCaseIndex, setActiveCaseIndex] = useState(0);
@@ -142,7 +147,7 @@ export function WorkspaceContent({ problem }: { problem: Problem }) {
     language: string;
     isAiOpen: boolean;
     score: number;
-    messages: any[];
+    messages: WorkspaceMessage[];
     panelSizes: Record<string, number>;
     verticalSizes: Record<string, number>;
   }>) => {
@@ -184,7 +189,7 @@ export function WorkspaceContent({ problem }: { problem: Problem }) {
     }
   };
 
-  const resumeChallenge = (sessionData: any) => {
+  const resumeChallenge = (sessionData: PendingSession) => {
     setSessionId(sessionData.sessionId);
     setScore(sessionData.score);
     setPenalty(100 - sessionData.score);
@@ -502,9 +507,14 @@ export function WorkspaceContent({ problem }: { problem: Problem }) {
           id="workspace-layout-group"
           orientation="horizontal" 
           defaultLayout={panelSizes}
-          onLayoutChanged={(sizes: any) => {
-            setPanelSizes(sizes);
-            saveState({ panelSizes: sizes });
+          onLayoutChanged={(sizes: Layout) => {
+            const mappedSizes = {
+              left: sizes[0] ?? 25,
+              center: sizes[1] ?? 55,
+              right: sizes[2] ?? 20
+            };
+            setPanelSizes(mappedSizes);
+            saveState({ panelSizes: mappedSizes });
           }}
         >
           {/* Left: Problem Description */}
@@ -623,9 +633,13 @@ export function WorkspaceContent({ problem }: { problem: Problem }) {
               </div>
 
               <div className="flex-1 min-h-0 bg-background">
-                <PanelGroup id="editor-console-layout" orientation="vertical" onLayoutChanged={(sizes: any) => {
-                  setVerticalSizes(sizes);
-                  saveState({ verticalSizes: sizes });
+                <PanelGroup id="editor-console-layout" orientation="vertical" onLayoutChanged={(sizes: Layout) => {
+                  const mappedSizes = {
+                    editor: sizes[0] ?? 70,
+                    console: sizes[1] ?? 30
+                  };
+                  setVerticalSizes(mappedSizes);
+                  saveState({ verticalSizes: mappedSizes });
                 }}>
                   {/* Editor */}
                   <Panel id="editor" defaultSize={verticalSizes.editor ?? 70} minSize={30}>
@@ -815,7 +829,9 @@ export function WorkspaceContent({ problem }: { problem: Problem }) {
         }}
         onConfirm={() => {
           setShowSessionPrompt(false);
-          resumeChallenge(pendingSession);
+          if (pendingSession) {
+            resumeChallenge(pendingSession);
+          }
         }}
         title="Active Challenge Exists"
         message="You have an active challenge session. Would you like to resume your previous progress or start a new challenge from 00:00?"
