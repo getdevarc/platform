@@ -39,7 +39,17 @@ exports.submitCode = async (data) => {
   const cases = result.testCases || [];
   const passedCasesCount = cases.filter(c => c.passed).length;
   const totalCasesCount = cases.length;
-  const score = result.status === "accepted" ? 100 : Math.round((passedCasesCount / Math.max(1, totalCasesCount)) * 100);
+
+  let sessionScore = 100;
+  if (data.sessionId) {
+    const sessionRepository = require("../repositories/sessionRepository");
+    const session = await sessionRepository.getSessionById(data.sessionId);
+    if (session) {
+      sessionScore = session.score;
+    }
+  }
+
+  const score = Math.round((passedCasesCount / Math.max(1, totalCasesCount)) * sessionScore);
 
   await submissionRepository.updateStatus(
     submission.id,

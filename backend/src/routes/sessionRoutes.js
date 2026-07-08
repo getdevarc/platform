@@ -11,6 +11,12 @@ router.post(
 );
 
 router.get(
+  "/active/:problemId",
+  authMiddleware,
+  sessionController.getActiveSession
+);
+
+router.get(
   "/:sessionId/insights",
   authMiddleware,
   sessionController.getSessionInsights

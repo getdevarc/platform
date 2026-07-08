@@ -65,6 +65,8 @@ Give a helpful hint that guides the user toward solving the problem based on the
 
   if (sessionId) {
     await eventService.logEvent(sessionId, "ai_hint", { hintLevel });
+    const sessionRepository = require("../repositories/sessionRepository");
+    await sessionRepository.deductPoints(sessionId, 20);
   }
 
   return hint;
@@ -110,6 +112,8 @@ Explanation:
 
   if (sessionId) {
     await eventService.logEvent(sessionId, "ai_explain");
+    const sessionRepository = require("../repositories/sessionRepository");
+    await sessionRepository.deductPoints(sessionId, 20);
   }
 
   return explanation;
@@ -158,7 +162,17 @@ Focus on reviewing the existing code.
   });
 
   if (sessionId) {
+    const eventRepository = require("../repositories/eventRepository");
+    const events = await eventRepository.getEventsBySessionId(sessionId);
+    const reviewCount = events.filter(e => e.event_type === "ai_review").length;
+
     await eventService.logEvent(sessionId, "ai_review");
+
+    // Deduct 25 points if this is not the first review
+    if (reviewCount > 0) {
+      const sessionRepository = require("../repositories/sessionRepository");
+      await sessionRepository.deductPoints(sessionId, 25);
+    }
   }
 
   return review;

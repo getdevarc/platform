@@ -45,18 +45,21 @@ exports.completeOnboarding = asyncHandler(async (req, res) => {
   // Fetch updated user to get resume context
   const user = await userRepository.findById(req.user.userId);
 
-  // Generate Roadmap if resume text exists
+  // Generate Roadmap based on resume or onboarding details
   let roadmap = null;
-  if (user.resume_text) {
-    try {
-      // Re-analyze the stored text directly
-      const analysisResults = await careerService.analyzeResumeText(user.resume_text);
-      roadmap = await careerService.generatePersonalizedRoadmap(user.id, { role, target_domain, answers }, analysisResults);
-
-      await roadmapRepository.createRoadmap(user.id, target_domain, roadmap);
-    } catch (e) {
-      console.error("Roadmap generation failed during onboarding:", e);
+  try {
+    let analysisResults = { skills: [], experience: "", career_gaps: [] };
+    if (user.resume_text) {
+      try {
+        analysisResults = await careerService.analyzeResumeText(user.resume_text);
+      } catch (err) {
+        console.error("Failed to parse resume text during onboarding:", err);
+      }
     }
+    roadmap = await careerService.generatePersonalizedRoadmap(user.id, { role, target_domain, answers }, analysisResults);
+    await roadmapRepository.createRoadmap(user.id, target_domain, roadmap);
+  } catch (e) {
+    console.error("Roadmap generation failed during onboarding:", e);
   }
 
   res.json({

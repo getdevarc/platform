@@ -3,11 +3,23 @@ const eventRepository = require("../repositories/eventRepository");
 const insightRepository = require("../repositories/insightRepository");
 const aiService = require("./aiService");
 
-exports.startSession = async (userId, problemId) => {
+exports.startSession = async (userId, problemId, forceNew = false) => {
+  const existing = await sessionRepository.findActiveSession(userId, problemId);
+  if (existing) {
+    if (forceNew) {
+      await sessionRepository.endSession(existing.id);
+    } else {
+      return existing;
+    }
+  }
   return await sessionRepository.createSession(
     userId,
     problemId
   );
+};
+
+exports.getActiveSession = async (userId, problemId) => {
+  return await sessionRepository.findActiveSession(userId, problemId);
 };
 
 exports.endSession = async (sessionId) => {
