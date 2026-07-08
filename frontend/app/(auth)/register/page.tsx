@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Button } from "@/components/ui/button";
@@ -8,18 +8,47 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, ArrowRight, ArrowLeft, Upload, CheckCircle2, User as UserIcon, Briefcase, GraduationCap, Target } from "lucide-react";
+import { Loader2, ArrowRight, ArrowLeft, Upload, CheckCircle2, Briefcase, GraduationCap, Target, Cpu, ShieldAlert, BadgeInfo } from "lucide-react";
 import Link from "next/link";
+import { useLoaderStore } from "@/store/useLoaderStore";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
+import { motion, AnimatePresence } from "framer-motion";
 
 type Step = 1 | 2 | 3 | 4;
+
+const REG_SLIDES = [
+  {
+    icon: Cpu,
+    image: "/images/auth_slide_career_path.png",
+    title: "AI Biography Mapping",
+    description: "Submit details about your background and profile. DevArc analyzes your credentials against thousands of industry standards to optimize placement targets.",
+  },
+  {
+    icon: ShieldAlert,
+    image: "/images/auth_slide_code_sandbox.png",
+    title: "Skill Gap Auditing",
+    description: "Scan your resume to instantly spotlight technical gaps relative to direct Job Descriptions at Google, Stripe, and modern startups.",
+  },
+  {
+    icon: BadgeInfo,
+    image: "/images/auth_slide_voice_interview.png",
+    title: "Adaptive Training Path",
+    description: "Unlock curated algorithmic challenges tailored specifically for your target timeframe and career benchmarks.",
+  },
+];
 
 export default function RegisterPage() {
   const [step, setStep] = useState<Step>(1);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { register, login } = useAuthStore();
+  const loader = useLoaderStore();
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  // OTP Validation States
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
 
   // Form State
   const [formData, setFormData] = useState({
@@ -37,34 +66,105 @@ export default function RegisterPage() {
 
   const [resume, setResume] = useState<File | null>(null);
 
+  const isBotEmail = (email: string) => {
+    const banned = ["mailinator.com", "yopmail.com", "tempmail.com", "10minutemail.com", "sharklasers.com", "guerrillamail.com", "dispostable.com", "getairmail.com", "burnermail.io"];
+    const domain = email.split("@")[1]?.toLowerCase();
+    return banned.includes(domain);
+  };
+
+  const getPasswordStrength = (pass: string) => {
+    if (!pass) return { score: 0, label: "", color: "bg-zinc-800" };
+    if (pass.length < 6) return { score: 25, label: "Very Weak", color: "bg-red-500" };
+    
+    let score = 0;
+    if (pass.length >= 8) score += 25;
+    if (/[0-9]/.test(pass)) score += 25;
+    if (/[A-Z]/.test(pass) && /[a-z]/.test(pass)) score += 25;
+    if (/[^A-Za-z0-9]/.test(pass)) score += 25;
+
+    if (score <= 25) return { score: 25, label: "Weak", color: "bg-orange-500" };
+    if (score <= 50) return { score: 50, label: "Medium", color: "bg-yellow-550 bg-yellow-500" };
+    if (score <= 75) return { score: 75, label: "Strong", color: "bg-emerald-500" };
+    return { score: 100, label: "Very Strong", color: "bg-emerald-600" };
+  };
+
+  // Auto-rotate slides
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % REG_SLIDES.length);
+    }, 4500);
+    return () => clearInterval(timer);
+  }, []);
+
   const handleNext = () => setStep((prev) => (prev + 1) as Step);
   const handleBack = () => setStep((prev) => (prev - 1) as Step);
 
+  const handleSendOTP = async () => {
+    if (!formData.name || !formData.email || !formData.password) {
+      toast.error("Please fill in name, email, and password first.");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      toast.error("Please enter a valid email address.");
+      return;
+    }
+
+    if (isBotEmail(formData.email)) {
+      toast.error("Spam/temporary emails are not allowed.");
+      return;
+    }
+
+    if (formData.password.length < 8) {
+      toast.error("Password must be at least 8 characters long.");
+      return;
+    }
+
+    setLoading(true);
+    loader.show("Sending verification code to your email...");
+    try {
+      await api.post("/auth/send-signup-otp", { email: formData.email });
+      setOtpSent(true);
+      toast.success("Verification code sent to your email!");
+    } catch (err) {
+      const error = err as { response?: { data?: { error?: string } } };
+      toast.error(error.response?.data?.error || "Failed to send OTP.");
+    } finally {
+      setLoading(false);
+      loader.hide();
+    }
+  };
+
   const handleRegister = async () => {
     setLoading(true);
+    loader.show("Creating your DevArc account...");
     try {
-      // Step 1: Create Account
+      // Step 1: Create Account with OTP verification
       await register({ 
         name: formData.name, 
         email: formData.email, 
-        password: formData.password 
+        password: formData.password,
+        otp: otpCode
       });
 
       // Step 2: Login to get token for subsequent profile updates
       await login({ email: formData.email, password: formData.password });
       
       // Step 3: Proceed to Profile Setup
-      handleNext();
+      setStep(2);
     } catch (err) {
       const error = err as { response?: { data?: { error?: string } } };
-      toast.error(error.response?.data?.error || "Registration failed.");
+      toast.error(error.response?.data?.error || "Registration failed. Verify OTP code.");
     } finally {
       setLoading(false);
+      loader.hide();
     }
   };
 
   const handleProfileSubmit = async () => {
     setLoading(true);
+    loader.show("Saving profile choices...");
     try {
       await api.post("/career/onboarding", {
         role: formData.role,
@@ -76,6 +176,7 @@ export default function RegisterPage() {
       toast.error("Failed to save profile.");
     } finally {
       setLoading(false);
+      loader.hide();
     }
   };
 
@@ -86,6 +187,7 @@ export default function RegisterPage() {
     }
 
     setLoading(true);
+    loader.show("AI analyzing your resume...");
     const fd = new FormData();
     fd.append("resume", resume);
 
@@ -98,274 +200,440 @@ export default function RegisterPage() {
       router.push("/dashboard");
     } finally {
       setLoading(false);
+      loader.hide();
     }
   };
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a] px-4 py-20 relative overflow-hidden">
-      {/* Background Decor */}
-      <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_50%,_rgba(var(--primary-rgb),0.05),transparent_50%)]" />
+  const SlideIcon = REG_SLIDES[currentSlide].icon;
 
-      <Card className="w-full max-w-lg border-white/5 bg-zinc-950/50 backdrop-blur-2xl shadow-2xl relative z-10 overflow-hidden">
-        {/* Progress Bar */}
-        <div className="h-1 bg-zinc-900 w-full overflow-hidden">
-          <div 
-            className="h-full bg-primary transition-all duration-500 ease-out" 
-            style={{ width: `${(step / 4) * 100}%` }}
-          />
+  return (
+    <div className="min-h-screen grid grid-cols-1 lg:grid-cols-12 bg-[#060606] text-white overflow-hidden font-sans">
+      {/* LEFT SIDE (~65%): HERO SLIDESHOW */}
+      <div className="hidden lg:flex lg:col-span-7 relative flex-col justify-between p-12 overflow-hidden border-r border-white/5">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,_#111111,_#060606_80%)] -z-10" />
+        <div className="absolute bottom-[20%] left-[10%] w-[350px] h-[350px] bg-primary/10 rounded-full blur-[140px] -z-10" />
+        
+        {/* Header Link */}
+        <div className="relative flex items-center gap-3 z-10">
+          <div className="h-10 w-10 bg-primary rounded-xl flex items-center justify-center text-primary-foreground font-extrabold text-lg shadow-lg shadow-primary/20">
+            DA
+          </div>
+          <span className="font-bold text-xl tracking-tight bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">
+            DevArc
+          </span>
+          <span className="text-[10px] font-extrabold text-primary uppercase tracking-widest bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full ml-1">
+            Sign Up
+          </span>
         </div>
 
-        <CardHeader className="space-y-2 pb-8">
-          <div className="flex justify-between items-center mb-4">
-             <div className="h-10 w-10 bg-primary/10 border border-primary/20 rounded-xl flex items-center justify-center text-primary font-bold">
-                DA
-             </div>
-             <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest bg-white/5 px-3 py-1 rounded-full">
-                Step {step} of 4
-             </div>
+        {/* Slide Content */}
+        <div className="relative my-auto z-10 flex flex-col justify-center min-h-[400px] w-full">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentSlide}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+              className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center"
+            >
+              <div className="md:col-span-5 space-y-6">
+                <div className="inline-flex items-center justify-center h-12 w-12 rounded-2xl bg-zinc-900 border border-white/10 text-primary mb-2 shadow-xl shadow-black/40">
+                  <SlideIcon size={24} className="text-primary" />
+                </div>
+                <h2 className="text-3xl font-extrabold tracking-tight text-white leading-tight">
+                  {REG_SLIDES[currentSlide].title}
+                </h2>
+                <p className="text-sm text-zinc-450 leading-relaxed">
+                  {REG_SLIDES[currentSlide].description}
+                </p>
+              </div>
+
+              <div className="md:col-span-7 bg-zinc-950/40 border border-white/5 rounded-2xl p-2 shadow-2xl backdrop-blur-xl max-h-[300px] overflow-hidden flex items-center justify-center">
+                <img 
+                  src={REG_SLIDES[currentSlide].image} 
+                  alt={REG_SLIDES[currentSlide].title} 
+                  className="rounded-xl w-full h-auto object-cover max-h-[280px]"
+                />
+              </div>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        {/* Carousel Indicators */}
+        <div className="relative flex items-center gap-6 z-10">
+          <div className="flex gap-2">
+            {REG_SLIDES.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => setCurrentSlide(idx)}
+                className={`h-1.5 rounded-full transition-all duration-300 ${
+                  currentSlide === idx ? "w-8 bg-primary" : "w-2 bg-zinc-800 hover:bg-zinc-700"
+                }`}
+              />
+            ))}
           </div>
-          {step === 1 && (
-            <>
-              <CardTitle className="text-2xl font-bold text-white tracking-tight">Create your account</CardTitle>
-              <CardDescription className="text-zinc-400 font-medium">Start your journey with an AI-powered mentor.</CardDescription>
-            </>
-          )}
-          {step === 2 && (
-            <>
-              <CardTitle className="text-2xl font-bold text-white tracking-tight">Professional Profile</CardTitle>
-              <CardDescription className="text-zinc-400 font-medium">Tell us about your current status and target domain.</CardDescription>
-            </>
-          )}
-          {step === 3 && (
-            <>
-              <CardTitle className="text-2xl font-bold text-white tracking-tight">Career Goals</CardTitle>
-              <CardDescription className="text-zinc-400 font-medium">Personalize your AI roadmap logic.</CardDescription>
-            </>
-          )}
-          {step === 4 && (
-            <>
-              <CardTitle className="text-2xl font-bold text-white tracking-tight">Upload Resume</CardTitle>
-              <CardDescription className="text-zinc-400 font-medium">AI will analyze your skills to build a better roadmap.</CardDescription>
-            </>
-          )}
-        </CardHeader>
+          <p className="text-[11px] text-zinc-500 font-bold uppercase tracking-widest">
+            AI Profile Mapping Setup
+          </p>
+        </div>
+      </div>
 
-        <CardContent className="pb-8 min-h-[300px] flex flex-col justify-center">
-          {step === 1 && (
-            <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300">
-              <div className="space-y-2">
-                <Label className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest pl-1">Full Name</Label>
-                <Input 
-                  placeholder="Aman Jha" 
-                  className="bg-zinc-900/50 border-white/5 h-12 rounded-2xl focus:border-primary/50"
-                  value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest pl-1">Email</Label>
-                <Input 
-                  type="email" 
-                  placeholder="name@example.com" 
-                  className="bg-zinc-900/50 border-white/5 h-12 rounded-2xl focus:border-primary/50"
-                  value={formData.email}
-                  onChange={(e) => setFormData({...formData, email: e.target.value})}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest pl-1">Password</Label>
-                <Input 
-                  type="password" 
-                  placeholder="••••••••" 
-                  className="bg-zinc-900/50 border-white/5 h-12 rounded-2xl focus:border-primary/50"
-                  value={formData.password}
-                  onChange={(e) => setFormData({...formData, password: e.target.value})}
-                />
-              </div>
+      {/* RIGHT SIDE (~35%): MULTI-STEP SIGNUP PANEL */}
+      <div className="col-span-1 lg:col-span-5 flex items-center justify-center p-6 relative bg-[#090909] lg:bg-transparent overflow-y-auto max-h-screen">
+        <div className="absolute top-[20%] right-[10%] w-[250px] h-[250px] bg-primary/10 rounded-full blur-[80px] lg:hidden -z-10" />
+
+        <div className="w-full max-w-md space-y-6 py-8">
+          <div className="flex flex-col items-center text-center space-y-1 lg:hidden">
+            <div className="h-10 w-10 bg-primary/10 border border-primary/20 rounded-xl flex items-center justify-center text-primary font-bold">
+              DA
             </div>
-          )}
+            <h1 className="text-xl font-bold tracking-tight text-white mt-2">Create DevArc Account</h1>
+            <p className="text-xs text-zinc-500">Step {step} of 4</p>
+          </div>
 
-          {step === 2 && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-               <div className="space-y-3">
-                  <Label className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest">Experience Level</Label>
-                  <div className="grid grid-cols-2 gap-4">
-                     {[
-                       { id: "Fresher", icon: GraduationCap, label: "Fresher" },
-                       { id: "Working Professional", icon: Briefcase, label: "Professional" }
-                     ].map((opt) => (
+          <Card className="border border-white/5 bg-zinc-950/40 backdrop-blur-xl shadow-2xl rounded-2xl relative overflow-hidden">
+            {/* Progress Stepper Bar */}
+            <div className="absolute top-0 left-0 w-full h-[3px] bg-zinc-900">
+              <div 
+                className="h-full bg-primary transition-all duration-500 ease-out" 
+                style={{ width: `${(step / 4) * 100}%` }}
+              />
+            </div>
+
+            <CardHeader className="space-y-1 pb-4 pt-6">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-extrabold text-primary uppercase tracking-widest">
+                  Step {step} of 4
+                </span>
+                <span className="text-[9px] text-zinc-550 uppercase tracking-widest">
+                  {step === 1 ? "Credentials" : step === 2 ? "Background" : step === 3 ? "Directives" : "Resume"}
+                </span>
+              </div>
+              
+              <div className="pt-2">
+                {step === 1 && (
+                  <>
+                    <CardTitle className="text-lg font-bold text-white tracking-tight">Create your account</CardTitle>
+                    <CardDescription className="text-zinc-500 text-xs">
+                      Build your profile to start your journey with an AI coach.
+                    </CardDescription>
+                  </>
+                )}
+                {step === 2 && (
+                  <>
+                    <CardTitle className="text-lg font-bold text-white tracking-tight">Professional Profile</CardTitle>
+                    <CardDescription className="text-zinc-500 text-xs">
+                      Tell us about your background status and target domain.
+                    </CardDescription>
+                  </>
+                )}
+                {step === 3 && (
+                  <>
+                    <CardTitle className="text-lg font-bold text-white tracking-tight">Career Goals</CardTitle>
+                    <CardDescription className="text-zinc-500 text-xs">
+                      Personalize your AI career roadmap logic.
+                    </CardDescription>
+                  </>
+                )}
+                {step === 4 && (
+                  <>
+                    <CardTitle className="text-lg font-bold text-white tracking-tight">Onboard Resume</CardTitle>
+                    <CardDescription className="text-zinc-500 text-xs">
+                      AI analyzes your skills to diagnose initial target gaps.
+                    </CardDescription>
+                  </>
+                )}
+              </div>
+            </CardHeader>
+
+            <CardContent className="pb-6 pt-1 min-h-[260px] flex flex-col justify-center">
+              {step === 1 && (
+                <div className="space-y-4 animate-in fade-in duration-300">
+                  {otpSent ? (
+                    <div className="space-y-3 bg-primary/5 border border-primary/10 p-5 rounded-2xl">
+                      <h4 className="text-xs font-bold text-primary uppercase tracking-wider">Email Verification Required</h4>
+                      <p className="text-[11px] text-zinc-400 leading-normal">
+                        A 6-digit verification code was sent to <strong className="text-white">{formData.email}</strong>. Please enter the code below to complete registration.
+                      </p>
+                      <div className="space-y-1.5 pt-2">
+                        <Label className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">OTP Code</Label>
+                        <Input 
+                          placeholder="000000" 
+                          maxLength={6}
+                          className="bg-zinc-900/40 border-white/5 h-11 text-white text-center font-mono tracking-widest text-lg placeholder:text-zinc-700 focus:border-primary/50 transition-colors rounded-xl"
+                          value={otpCode}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/[^0-9]/g, "");
+                            setOtpCode(val);
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="space-y-1">
+                        <Label className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider pl-0.5">Full Name</Label>
+                        <Input 
+                          placeholder="Aman Jha" 
+                          className="bg-zinc-900/40 border-white/5 h-11 text-white placeholder:text-zinc-650 focus:border-primary/50 transition-colors rounded-xl text-sm"
+                          value={formData.name}
+                          onChange={(e) => setFormData({...formData, name: e.target.value})}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider pl-0.5">Email Address</Label>
+                        <Input 
+                          type="email" 
+                          placeholder="name@example.com" 
+                          className="bg-zinc-900/40 border-white/5 h-11 text-white placeholder:text-zinc-650 focus:border-primary/50 transition-colors rounded-xl text-sm"
+                          value={formData.email}
+                          onChange={(e) => setFormData({...formData, email: e.target.value})}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider pl-0.5">Password</Label>
+                        <Input 
+                          type="password" 
+                          placeholder="••••••••" 
+                          className="bg-zinc-900/40 border-white/5 h-11 text-white placeholder:text-zinc-650 focus:border-primary/50 transition-colors rounded-xl text-sm"
+                          value={formData.password}
+                          onChange={(e) => setFormData({...formData, password: e.target.value})}
+                        />
+                        {formData.password && (
+                          <div className="pt-2 space-y-1">
+                            <div className="flex justify-between items-center text-[10px] font-bold uppercase text-zinc-500">
+                              <span>Security:</span>
+                              <span className={cn(
+                                formData.password.length < 8 ? "text-red-500" :
+                                getPasswordStrength(formData.password).label === "Weak" ? "text-orange-500" :
+                                getPasswordStrength(formData.password).label === "Medium" ? "text-yellow-500" : "text-emerald-500"
+                              )}>
+                                {getPasswordStrength(formData.password).label}
+                              </span>
+                            </div>
+                            <div className="h-1.5 w-full bg-zinc-900 rounded-full overflow-hidden">
+                              <div 
+                                className={cn("h-full transition-all duration-300", getPasswordStrength(formData.password).color)}
+                                style={{ width: `${getPasswordStrength(formData.password).score}%` }}
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {step === 2 && (
+                <div className="space-y-5 animate-in fade-in duration-300">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Experience Level</Label>
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { id: "Fresher", icon: GraduationCap, label: "Fresher" },
+                        { id: "Working Professional", icon: Briefcase, label: "Professional" }
+                      ].map((opt) => (
                         <button 
+                          type="button"
                           key={opt.id}
                           onClick={() => setFormData({...formData, role: opt.id})}
                           className={cn(
-                            "flex flex-col items-center gap-3 p-6 rounded-2xl border transition-all group",
+                            "flex flex-col items-center gap-2 p-4 rounded-xl border transition-all text-center",
                             formData.role === opt.id 
                               ? "bg-primary/10 border-primary text-primary" 
-                              : "bg-white/5 border-white/5 text-zinc-500 hover:bg-white/10"
+                              : "bg-white/5 border-white/5 text-zinc-400 hover:bg-white/10"
                           )}
                         >
-                           <opt.icon size={24} className={cn("transition-colors", formData.role === opt.id ? "text-primary" : "text-zinc-600 group-hover:text-zinc-400")} />
-                           <span className="text-xs font-bold tracking-widest">{opt.label}</span>
+                          <opt.icon size={20} className={formData.role === opt.id ? "text-primary" : "text-zinc-500"} />
+                          <span className="text-xs font-bold uppercase tracking-wider">{opt.label}</span>
                         </button>
-                     ))}
+                      ))}
+                    </div>
                   </div>
-               </div>
 
-               <div className="space-y-3">
-                  <Label className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest">Target Domain</Label>
-                  <div className="grid grid-cols-3 gap-2">
-                     {["Frontend", "Backend", "Full Stack", "DevOps", "Data Science", "Mobile UI"].map((domain) => (
+                  <div className="space-y-2">
+                    <Label className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Target Domain</Label>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {["Frontend", "Backend", "Full Stack", "DevOps", "Data Science", "Mobile UI"].map((domain) => (
                         <button 
+                          type="button"
                           key={domain}
                           onClick={() => setFormData({...formData, targetDomain: domain})}
                           className={cn(
-                             "py-3 px-1 rounded-xl border text-[10px] font-bold uppercase transition-all tracking-tighter",
-                             formData.targetDomain === domain 
-                               ? "bg-primary border-primary text-white"
-                               : "bg-white/5 border-white/5 text-zinc-500 hover:border-zinc-700"
+                            "py-2 px-1 rounded-lg border text-[9px] font-extrabold uppercase transition-all tracking-wider text-center",
+                            formData.targetDomain === domain 
+                              ? "bg-primary border-primary text-primary-foreground"
+                              : "bg-white/5 border-white/5 text-zinc-400 hover:border-zinc-700"
                           )}
                         >
-                           {domain}
+                          {domain}
                         </button>
-                     ))}
+                      ))}
+                    </div>
                   </div>
-               </div>
-            </div>
-          )}
+                </div>
+              )}
 
-          {step === 3 && (
-            <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300">
-                <div className="space-y-2">
-                   <Label className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
+              {step === 3 && (
+                <div className="space-y-4 animate-in fade-in duration-300">
+                  <div className="space-y-1">
+                    <Label className="text-[10px] text-zinc-450 font-bold uppercase tracking-wider flex items-center gap-1.5">
                       <Target size={12} className="text-primary" /> What is your primary 3-month goal?
-                   </Label>
-                   <Input 
+                    </Label>
+                    <Input 
                       placeholder="e.g., Land a SDE-1 role at a startup" 
-                      className="bg-zinc-900/50 border-white/5 h-12 rounded-2xl"
+                      className="bg-zinc-900/40 border-white/5 h-11 text-white placeholder:text-zinc-650 focus:border-primary/50 transition-colors rounded-xl text-sm"
                       value={formData.answers.goal}
                       onChange={(e) => setFormData({...formData, answers: {...formData.answers, goal: e.target.value}})}
-                   />
-                </div>
-                <div className="space-y-2">
-                   <Label className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest">Target Dream Company</Label>
-                   <Input 
+                    />
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <Label className="text-[10px] text-zinc-450 font-bold uppercase tracking-wider">Target Dream Company</Label>
+                    <Input 
                       placeholder="e.g., Google, Stripe, or Early Stage AI startup" 
-                      className="bg-zinc-900/50 border-white/5 h-12 rounded-2xl"
+                      className="bg-zinc-900/40 border-white/5 h-11 text-white placeholder:text-zinc-650 focus:border-primary/50 transition-colors rounded-xl text-sm"
                       value={formData.answers.dream_company}
                       onChange={(e) => setFormData({...formData, answers: {...formData.answers, dream_company: e.target.value}})}
-                   />
+                    />
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-amber-500/5 border border-amber-500/10 flex items-center gap-3 mt-1">
+                    <CheckCircle2 size={16} className="text-amber-500 shrink-0" />
+                    <p className="text-[9px] text-zinc-400 leading-normal uppercase font-bold tracking-wider">The career engine uses these goals to adjust algorithm choices.</p>
+                  </div>
                 </div>
-                <div className="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/10 flex items-center gap-4">
-                   <div className="h-8 w-8 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-500">
-                      <CheckCircle2 size={16} />
-                   </div>
-                   <p className="text-[10px] text-amber-200/50 font-medium uppercase tracking-widest">AI will prioritize these targets in your roadmap logic.</p>
+              )}
+
+              {step === 4 && (
+                <div className="space-y-4 animate-in fade-in duration-300 text-center">
+                  <div 
+                    className={cn(
+                      "border border-dashed rounded-2xl p-6 flex flex-col items-center gap-3 transition-all cursor-pointer",
+                      resume ? "bg-emerald-500/5 border-emerald-500/20" : "bg-zinc-900/20 border-white/5 hover:border-primary/20"
+                    )}
+                    onClick={() => document.getElementById("resume-upload")?.click()}
+                  >
+                    <input 
+                      id="resume-upload" 
+                      type="file" 
+                      className="hidden" 
+                      accept=".pdf" 
+                      onChange={(e) => {
+                        if (e.target.files) setResume(e.target.files[0]);
+                      }}
+                    />
+                    <div className={cn(
+                      "h-12 w-12 rounded-xl flex items-center justify-center shadow-lg",
+                      resume ? "bg-emerald-500 text-white" : "bg-zinc-800 text-zinc-550"
+                    )}>
+                      {resume ? <CheckCircle2 size={24} /> : <Upload size={24} />}
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-xs text-white mb-0.5">{resume ? resume.name : "Select Resume PDF"}</h4>
+                      <p className="text-[10px] text-zinc-500">Drag and drop or click to upload</p>
+                    </div>
+                  </div>
+                  <p className="text-[9px] text-zinc-550 uppercase font-bold tracking-wider">Optional: Skip if you prefer full manual setup.</p>
                 </div>
-            </div>
-          )}
+              )}
+            </CardContent>
 
-          {step === 4 && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300 text-center">
-                <div 
-                  className={cn(
-                    "border-2 border-dashed rounded-3xl p-10 flex flex-col items-center gap-4 transition-all cursor-pointer",
-                    resume ? "bg-emerald-500/5 border-emerald-500/20" : "bg-zinc-900/20 border-white/5 hover:border-primary/20"
-                  )}
-                  onClick={() => document.getElementById("resume-upload")?.click()}
-                >
-                   <input 
-                     id="resume-upload" 
-                     type="file" 
-                     className="hidden" 
-                     accept=".pdf" 
-                     onChange={(e) => {
-                       if (e.target.files) setResume(e.target.files[0]);
-                     }}
-                   />
-                   <div className={cn(
-                     "h-16 w-16 rounded-2xl flex items-center justify-center shadow-lg",
-                     resume ? "bg-emerald-500 text-white" : "bg-zinc-800 text-zinc-500"
-                   )}>
-                      {resume ? <CheckCircle2 size={32} /> : <Upload size={32} />}
-                   </div>
-                   <div>
-                      <h4 className="font-bold text-white mb-1">{resume ? resume.name : "Select Resume PDF"}</h4>
-                      <p className="text-xs text-zinc-500 font-medium">Drag and drop or click to upload</p>
-                   </div>
-                </div>
-                <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">Skip this step if you don&apos;t have a resume yet.</p>
-            </div>
-          )}
-        </CardContent>
-
-        <CardFooter className="bg-black/20 p-8 border-t border-white/5 gap-3">
-          {step > 1 && (
-            <Button 
-              variant="outline" 
-              className="h-12 w-12 rounded-2xl border-white/10 hover:bg-white/5"
-              onClick={handleBack}
-              disabled={loading}
-            >
-               <ArrowLeft size={18} />
-            </Button>
-          )}
-          
-          {step === 1 && (
-            <Button 
-              className="flex-1 h-12 rounded-2xl bg-primary text-white font-bold uppercase tracking-widest group shadow-lg shadow-primary/20"
-              onClick={handleRegister}
-              disabled={loading || !formData.email || !formData.password}
-            >
-               {loading ? <Loader2 className="animate-spin" /> : "Next Step"}
-               <ArrowRight size={16} className="ml-2 group-hover:translate-x-1 transition-transform" />
-            </Button>
-          )}
-
-          {step === 2 && (
-             <Button 
-               className="flex-1 h-12 rounded-2xl bg-primary text-white font-bold uppercase tracking-widest"
-               onClick={handleNext}
-               disabled={loading}
-             >
-                Continue <ArrowRight size={16} className="ml-2" />
-             </Button>
-          )}
-
-          {step === 3 && (
-             <Button 
-               className="flex-1 h-12 rounded-2xl bg-primary text-white font-bold uppercase tracking-widest"
-               onClick={handleProfileSubmit}
-               disabled={loading || !formData.answers.goal}
-             >
-                {loading ? <Loader2 className="animate-spin" /> : "Save Profile"}
-                <ArrowRight size={16} className="ml-2" />
-             </Button>
-          )}
-
-          {step === 4 && (
-             <div className="flex-1 flex gap-3">
+            <CardFooter className="bg-black/10 p-5 border-t border-white/5 gap-2">
+              {step > 1 && (
                 <Button 
-                  variant="ghost" 
-                  className="flex-1 h-12 rounded-2xl text-zinc-500 font-bold uppercase tracking-widest"
-                  onClick={() => router.push("/dashboard")}
+                  type="button"
+                  variant="outline" 
+                  className="h-11 w-11 shrink-0 rounded-xl border-white/10 bg-zinc-900/20 hover:bg-zinc-900/40 text-zinc-400 hover:text-white"
+                  onClick={handleBack}
                   disabled={loading}
                 >
-                  Skip
+                  <ArrowLeft size={16} />
                 </Button>
-                <Button 
-                  className="flex-2 h-12 px-8 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold uppercase tracking-widest shadow-lg shadow-emerald-500/20"
-                  onClick={handleResumeUpload}
-                  disabled={loading || !resume}
-                >
-                   {loading ? <Loader2 className="animate-spin" /> : "Analyze & Finish"}
-                </Button>
-             </div>
-          )}
-        </CardFooter>
-      </Card>
+              )}
+              
+              {step === 1 && (
+                <div className="flex-1 flex gap-2">
+                  {otpSent && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-11 px-4 rounded-xl border-white/10 bg-zinc-900/20 hover:bg-zinc-900/40 text-zinc-400 hover:text-white"
+                      onClick={() => setOtpSent(false)}
+                      disabled={loading}
+                    >
+                      Back
+                    </Button>
+                  )}
+                  <Button 
+                    type="button"
+                    className="flex-1 h-11 rounded-xl bg-primary hover:bg-primary/95 text-primary-foreground font-bold uppercase tracking-widest text-xs"
+                    onClick={otpSent ? handleRegister : handleSendOTP}
+                    disabled={loading || !formData.email || !formData.password || (otpSent && otpCode.length !== 6)}
+                  >
+                    {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                    {otpSent ? "Verify & Register" : "Request Verification Code"}
+                    <ArrowRight size={14} className="ml-1.5" />
+                  </Button>
+                </div>
+              )}
 
-      <div className="mt-8 text-center text-zinc-600 text-xs relative z-10">
-         Already have an account? <Link href="/login" className="text-primary hover:underline">Log in</Link>
+              {step === 2 && (
+                <Button 
+                  type="button"
+                  className="flex-1 h-11 rounded-xl bg-primary hover:bg-primary/95 text-primary-foreground font-bold uppercase tracking-widest text-xs"
+                  onClick={handleNext}
+                  disabled={loading}
+                >
+                  Continue <ArrowRight size={14} className="ml-1.5" />
+                </Button>
+              )}
+
+              {step === 3 && (
+                <Button 
+                  type="button"
+                  className="flex-1 h-11 rounded-xl bg-primary hover:bg-primary/95 text-primary-foreground font-bold uppercase tracking-widest text-xs"
+                  onClick={handleProfileSubmit}
+                  disabled={loading || !formData.answers.goal}
+                >
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : "Save Profile"}
+                  <ArrowRight size={14} className="ml-1.5" />
+                </Button>
+              )}
+
+              {step === 4 && (
+                <div className="flex-1 flex gap-2">
+                  <Button 
+                    type="button"
+                    variant="ghost" 
+                    className="flex-1 h-11 rounded-xl text-zinc-500 font-bold uppercase tracking-widest text-[10px]"
+                    onClick={() => router.push("/dashboard")}
+                    disabled={loading}
+                  >
+                    Skip
+                  </Button>
+                  <Button 
+                    type="button"
+                    className="h-11 px-5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold uppercase tracking-widest text-[10px] shadow-lg shadow-emerald-500/10"
+                    onClick={handleResumeUpload}
+                    disabled={loading || !resume}
+                  >
+                    {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : "Analyze & Finish"}
+                  </Button>
+                </div>
+              )}
+            </CardFooter>
+          </Card>
+
+          <p className="text-xs text-center text-zinc-500 relative z-10">
+            Already have an account?{" "}
+            <Link href="/login" className="text-primary hover:underline font-bold text-xs uppercase tracking-wide">
+              Log In
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

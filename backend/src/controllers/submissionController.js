@@ -7,6 +7,7 @@ const getLanguageName = (body) => {
   if (id === 63) return "javascript";
   if (id === 71) return "python";
   if (id === 54) return "cpp";
+  if (id === 62) return "java";
   return "javascript";
 };
 

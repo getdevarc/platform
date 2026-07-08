@@ -36,3 +36,14 @@ exports.login = async ({ email, password }) => {
 
   return token;
 };
+
+exports.resetPassword = async (email, newPassword) => {
+  const user = await userRepository.findByEmail(email);
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+  await userRepository.updateUser(user.id, { password: hashedPassword });
+  return true;
+};

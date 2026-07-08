@@ -34,6 +34,8 @@ interface WorkspaceState {
   setStatus: (status: WorkspaceState["status"]) => void;
   setResult: (result: unknown) => void;
   setInsights: (insights: SolveInsights | null) => void;
+  setScore: (score: number) => void;
+  setPenalty: (penalty: number) => void;
   resetWorkspace: () => void;
 }
 
@@ -71,6 +73,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
   setStatus: (status) => set({ status }),
   setResult: (result) => set({ result }),
   setInsights: (insights) => set({ insights }),
+  setScore: (score) => set({ score }),
+  setPenalty: (penalty) => set({ penalty }),
   resetWorkspace: () => set({
     code: "",
     sessionId: null,

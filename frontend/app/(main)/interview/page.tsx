@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useTheme } from "next-themes";
 import { api, ApiResponse } from "@/lib/api";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Button } from "@/components/ui/button";
@@ -19,13 +20,23 @@ import {
   Loader2,
   ArrowRight,
   Download,
-  Play
+  Play,
+  Code2,
+  Network,
+  Laptop,
+  Terminal,
+  Sliders,
+  Clock,
+  ShieldAlert,
+  Settings,
+  Sparkles
 } from "lucide-react";
 import Editor from "@monaco-editor/react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
+import { BaseHero, FeatureCard, StatCard } from "@/components/shared/DesignSystem";
 
 interface TestCaseResult {
   input: string;
@@ -80,8 +91,12 @@ const boilerplates = {
 };
 
 export default function InterviewPage() {
+  const { theme } = useTheme();
   const [mode, setMode] = useState<"selection" | "session" | "evaluation">("selection");
   const [interviewType, setInterviewType] = useState<string>("DSA");
+  const [difficulty, setDifficulty] = useState<"Easy" | "Medium" | "Hard">("Medium");
+  const [duration, setDuration] = useState<number>(45);
+  const [targetMetric, setTargetMetric] = useState<"Performance" | "Clean Code" | "Scalability">("Performance");
   const [session, setSession] = useState<InterviewSession | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -624,51 +639,148 @@ export default function InterviewPage() {
 
   if (mode === "selection") {
     return (
-      <div className="min-h-[calc(100vh-64px)] w-full flex flex-col items-center justify-center bg-[#0a0a0a] px-6 text-center">
-         <div className="max-w-2xl w-full space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="space-y-4">
-               <div className="h-16 w-16 bg-primary/10 border border-primary/20 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-primary/5">
-                  <BrainCircuit size={32} className="text-primary" />
-               </div>
-               <h1 className="text-4xl font-bold text-white tracking-tight">AI Mock Interview Room</h1>
-               <p className="text-zinc-500 text-lg">Test your software engineering expertise under dynamic tech interview scenarios.</p>
+      <div className="min-h-[calc(100vh-64px)] w-full bg-background text-foreground py-10 px-6 overflow-y-auto">
+        <div className="max-w-5xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <BaseHero
+            badgeText="AI Mock Technical Room"
+            title="Interview Sandbox"
+            highlight="Practice"
+            description="Prepare for core technical interviews. Experience realistic real-time questions, live code sandbox feedback, code testing validation, and detailed diagnostic reporting."
+          />
+
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+            {/* Tracks Column */}
+            <div className="md:col-span-8 space-y-6">
+              <div>
+                <h3 className="text-sm font-bold text-zinc-900 dark:text-white uppercase tracking-widest mb-1.5 font-sans">1. Select technical track</h3>
+                <p className="text-xs text-zinc-500 mb-4 leading-normal">Choose one of the tracks matching your target career domain to initiate room context generation.</p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {[
+                  { id: "DSA", name: "Data Structures", desc: "Arrays, Trees, Graphs, Dynamic Programming logic", icon: Code2 },
+                  { id: "System Design", name: "System Design", desc: "Scalability, LLD, HLD, Distributed system patterns", icon: Network },
+                  { id: "Frontend", name: "Frontend Core", desc: "React architecture, DOM performance, advanced JS principles", icon: Laptop },
+                  { id: "Frameworks", name: "Frameworks & Backend", desc: "Node.js, Next.js routing, SQL queries, REST/GraphQL design", icon: Terminal }
+                ].map((track) => {
+                  const Icon = track.icon;
+                  const isSelected = interviewType === track.id;
+                  return (
+                    <div key={track.id} className="relative group">
+                      <FeatureCard
+                        title={track.name}
+                        description={track.desc}
+                        icon={Icon}
+                        onClick={() => setInterviewType(track.id)}
+                        className={cn(
+                          "cursor-pointer relative overflow-hidden transition-all duration-300",
+                          isSelected 
+                            ? "border-primary/40 bg-zinc-950/80 shadow-lg shadow-primary/5 ring-1 ring-primary/20" 
+                            : "bg-white dark:bg-zinc-950/20 border-zinc-200 dark:border-white/5 hover:border-zinc-350 dark:hover:border-zinc-800"
+                        )}
+                      >
+                        {isSelected && (
+                          <div className="absolute top-4 right-4 flex items-center justify-center h-5 w-5 rounded-full bg-primary/10 border border-primary/20 text-primary">
+                            <CheckCircle2 size={12} />
+                          </div>
+                        )}
+                      </FeatureCard>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-               {[
-                 { id: "DSA", name: "Data Structures", desc: "Arrays, Trees, Graphs, DP" },
-                 { id: "System Design", name: "System Design", desc: "Scalability, LLD, HLD" },
-                 { id: "Frontend", name: "Frontend Core", desc: "React, Performance, JS" },
-                 { id: "Frameworks", name: "Frameworks", desc: "Node.js, Next.js, Django" }
-               ].map((type) => (
-                  <button 
-                    key={type.id}
-                    onClick={() => setInterviewType(type.id)}
-                    className={cn(
-                      "p-6 rounded-3xl border text-left transition-all group relative overflow-hidden",
-                      interviewType === type.id 
-                        ? "bg-primary/10 border-primary shadow-lg shadow-primary/5" 
-                        : "bg-white/5 border-white/5 hover:border-zinc-700"
-                    )}
+            {/* Config Column */}
+            <div className="md:col-span-4 space-y-6">
+              <div>
+                <h3 className="text-sm font-bold text-zinc-900 dark:text-white uppercase tracking-widest mb-1.5 font-sans">2. Setup room options</h3>
+                <p className="text-xs text-zinc-500 mb-4 leading-normal">Customize interview parameters for targeting system evaluation behaviors.</p>
+              </div>
+
+              <div className="bg-card/45 dark:bg-zinc-950/40 border border-zinc-200 dark:border-white/5 p-6 rounded-2xl backdrop-blur-md space-y-6">
+                {/* Difficulty */}
+                <div className="space-y-3">
+                  <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block select-none">Difficulty level</span>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(["Easy", "Medium", "Hard"] as const).map((diff) => (
+                      <button
+                        key={diff}
+                        type="button"
+                        onClick={() => setDifficulty(diff)}
+                        className={cn(
+                          "py-2 text-[10px] uppercase tracking-wider font-extrabold rounded-xl border transition-all cursor-pointer select-none",
+                          difficulty === diff
+                            ? "bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/10"
+                            : "bg-zinc-100 dark:bg-zinc-900 border-zinc-200 dark:border-white/5 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
+                        )}
+                      >
+                        {diff}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Duration */}
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center select-none">
+                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Duration constraint</span>
+                    <span className="text-xs font-mono font-bold text-primary">{duration} Mins</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={15}
+                    max={90}
+                    step={15}
+                    value={duration}
+                    onChange={(e) => setDuration(Number(e.target.value))}
+                    className="w-full accent-primary bg-zinc-200 dark:bg-zinc-800 h-1.5 rounded-lg appearance-none cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[9px] text-zinc-550 dark:text-zinc-500 font-bold font-mono select-none">
+                    <span>15 MIN</span>
+                    <span>45 MIN</span>
+                    <span>90 MIN</span>
+                  </div>
+                </div>
+
+                {/* Target Metric focal point */}
+                <div className="space-y-3">
+                  <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block select-none">Primary AI Metric</span>
+                  <select
+                    value={targetMetric}
+                    onChange={(e) => setTargetMetric(e.target.value as any)}
+                    className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 text-xs text-zinc-900 dark:text-zinc-300 rounded-xl p-3 outline-none cursor-pointer focus:border-primary/50 transition-all font-mono"
                   >
-                     {interviewType === type.id && (
-                       <div className="absolute top-4 right-4 h-2 w-2 rounded-full bg-primary animate-pulse" />
-                     )}
-                     <h3 className={cn("font-bold mb-1 transition-colors", interviewType === type.id ? "text-primary" : "text-white")}>{type.name}</h3>
-                     <p className="text-[10px] text-zinc-550 font-bold uppercase tracking-widest">{type.desc}</p>
-                  </button>
-               ))}
-            </div>
+                    <option value="Performance">⚡ Performance Optimization</option>
+                    <option value="Clean Code">✨ Code quality & readability</option>
+                    <option value="Scalability">🌐 System Scalability</option>
+                  </select>
+                </div>
 
-            <Button 
-               className="w-full h-14 rounded-2xl bg-primary text-primary-foreground font-bold text-sm uppercase tracking-widest shadow-lg shadow-primary/20 hover:opacity-90 transition-all group"
-               onClick={startSession}
-               disabled={loading}
-             >
-               {loading ? <Loader2 className="animate-spin mr-2" /> : "Start Interview Room"}
-               <ArrowRight size={18} className="ml-2 group-hover:translate-x-1 transition-transform" />
-            </Button>
-         </div>
+                <div className="h-px bg-zinc-200 dark:bg-white/5 my-4" />
+
+                {/* Action CTA */}
+                <Button
+                  className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-bold text-xs uppercase tracking-widest shadow-lg shadow-primary/20 hover:opacity-95 transition-all group"
+                  onClick={startSession}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="animate-spin mr-2 animate-duration-1000" size={14} />
+                      Generating Sandbox...
+                    </>
+                  ) : (
+                    <>
+                      <Play className="mr-2 fill-primary-foreground" size={12} />
+                      Start Mock Room
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -676,10 +788,10 @@ export default function InterviewPage() {
   if (!session) return null;
 
   return (
-    <div className="flex h-[calc(100vh-64px)] bg-[#0a0a0a] overflow-hidden select-none">
+    <div className="flex h-[calc(100vh-64px)] bg-background text-foreground overflow-hidden select-none">
       
       {/* Sidebar Questions Tracker Panel */}
-      <div className="w-16 bg-zinc-950 border-r border-[#161616] flex flex-col items-center py-4 space-y-4 shrink-0 z-30">
+      <div className="w-16 bg-card border-r border-zinc-200 dark:border-[#161616] flex flex-col items-center py-4 space-y-4 shrink-0 z-30">
          <Badge className="bg-primary/20 text-primary border-none text-[8px] font-bold px-1.5 uppercase font-mono mb-2 select-none">Mock</Badge>
          
          <button 
@@ -688,14 +800,14 @@ export default function InterviewPage() {
              "h-10 w-10 rounded-xl flex items-center justify-center border transition-all cursor-pointer",
              selectedCompletedQuestion === null 
                ? "bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/20" 
-               : "bg-zinc-900 border-white/5 text-zinc-400 hover:text-white"
+               : "bg-zinc-150 dark:bg-zinc-900 border-zinc-200 dark:border-white/5 text-zinc-600 dark:text-zinc-400 hover:text-zinc-905 dark:hover:text-white"
            )}
            title="Active Sandbox Workspace"
          >
             <BrainCircuit size={18} />
          </button>
          
-         <div className="w-8 border-t border-white/5 my-2" />
+         <div className="w-8 border-t border-zinc-200 dark:border-white/5 my-2" />
          
          {completedQuestions.map((cq, idx) => (
             <button 
@@ -704,15 +816,15 @@ export default function InterviewPage() {
               className={cn(
                 "h-10 w-10 rounded-xl flex items-center justify-center border transition-all cursor-pointer relative",
                 selectedCompletedQuestion?.index === cq.index 
-                  ? "bg-zinc-800 border-primary text-primary" 
-                  : "bg-zinc-900 border-white/5 text-zinc-400 hover:text-white"
+                  ? "bg-zinc-100 dark:bg-zinc-800 border-primary text-primary" 
+                  : "bg-zinc-100 dark:bg-zinc-900 border-zinc-200 dark:border-white/5 text-zinc-650 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
               )}
               title={cq.title}
-            >
-               <span className="text-[10px] font-bold font-mono">Q{idx + 1}</span>
-               <div className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-emerald-500 text-[8px] font-bold text-white flex items-center justify-center shadow">
-                  ✓
-               </div>
+             >
+                <span className="text-[10px] font-bold font-mono">Q{idx + 1}</span>
+                <div className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-emerald-500 text-[8px] font-bold text-white flex items-center justify-center shadow">
+                   ✓
+                </div>
             </button>
          ))}
       </div>
@@ -720,15 +832,15 @@ export default function InterviewPage() {
       <div className="flex-1 flex overflow-hidden">
         {selectedCompletedQuestion ? (
           /* Completed Question Read-Only Review Panel */
-          <div className="flex-1 p-8 bg-zinc-950/80 overflow-y-auto space-y-8 select-text">
-             <div className="flex items-center justify-between border-b border-white/5 pb-4">
+          <div className="flex-1 p-8 bg-card/90 dark:bg-zinc-950/80 overflow-y-auto space-y-8 select-text">
+             <div className="flex items-center justify-between border-b border-zinc-200 dark:border-white/5 pb-4">
                 <div>
-                   <h2 className="text-xl font-bold text-white tracking-tight">{selectedCompletedQuestion.title}</h2>
+                   <h2 className="text-xl font-bold text-zinc-900 dark:text-white tracking-tight">{selectedCompletedQuestion.title}</h2>
                    <p className="text-[9px] text-zinc-550 uppercase tracking-widest font-bold mt-1">Mock Interview submission review</p>
                 </div>
                 <Button 
                    variant="outline" 
-                   className="border-white/10 text-xs font-bold rounded-xl h-9 text-zinc-300 hover:text-white bg-zinc-900/50 hover:bg-zinc-900"
+                   className="border-zinc-200 dark:border-white/10 text-xs font-bold rounded-xl h-9 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white bg-zinc-100 dark:bg-zinc-900/50 hover:bg-zinc-200 dark:hover:bg-zinc-900"
                    onClick={() => setSelectedCompletedQuestion(null)}
                 >
                    Back to Active Workspace
@@ -736,16 +848,16 @@ export default function InterviewPage() {
              </div>
 
              <div className="grid grid-cols-3 gap-6">
-                <div className="p-4 bg-zinc-900/30 border border-white/5 rounded-2xl">
+                <div className="p-4 bg-zinc-100/50 dark:bg-zinc-900/30 border border-zinc-200 dark:border-white/5 rounded-2xl">
                    <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Time Taken</span>
-                   <span className="text-sm font-bold text-white font-mono">{formatTime(selectedCompletedQuestion.timeTaken)}</span>
+                   <span className="text-sm font-bold text-zinc-900 dark:text-white font-mono">{formatTime(selectedCompletedQuestion.timeTaken)}</span>
                 </div>
-                <div className="p-4 bg-zinc-900/30 border border-white/5 rounded-2xl">
+                <div className="p-4 bg-zinc-100/50 dark:bg-zinc-900/30 border border-zinc-200 dark:border-white/5 rounded-2xl">
                    <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Status</span>
                    <span className="text-sm font-bold text-emerald-500 font-sans uppercase">Submitted</span>
                 </div>
-                <div className="p-4 bg-zinc-900/30 border border-white/5 rounded-2xl">
-                   <span className="text-[9px] font-bold text-[#fafafa] uppercase tracking-widest block mb-1">Test Cases passed</span>
+                <div className="p-4 bg-zinc-100/50 dark:bg-zinc-900/30 border border-zinc-200 dark:border-white/5 rounded-2xl">
+                   <span className="text-[9px] font-bold text-zinc-705 dark:text-[#fafafa] uppercase tracking-widest block mb-1">Test Cases passed</span>
                    <span className="text-sm font-bold text-emerald-500 font-mono">
                       {selectedCompletedQuestion.evaluation?.testCases?.filter((t: TestCaseResult) => t.passed).length || 0} / {selectedCompletedQuestion.evaluation?.testCases?.length || 3} Passed
                    </span>
@@ -754,17 +866,17 @@ export default function InterviewPage() {
 
              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-3">
-                   <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Question Details</h3>
-                   <div className="p-5 bg-zinc-900/10 border border-white/5 rounded-2xl max-h-[350px] overflow-y-auto min-h-[300px]">
+                   <h3 className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">Question Details</h3>
+                   <div className="p-5 bg-zinc-100/30 dark:bg-zinc-900/10 border border-zinc-200 dark:border-white/5 rounded-2xl max-h-[350px] overflow-y-auto min-h-[300px]">
                       {renderFormattedText(selectedCompletedQuestion.questionText)}
                    </div>
                 </div>
                 <div className="space-y-3">
-                   <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-widest font-sans">Submitted Code ({selectedCompletedQuestion.language})</h3>
-                   <div className="border border-white/5 rounded-2xl overflow-hidden min-h-[300px] bg-zinc-950">
+                   <h3 className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest font-sans">Submitted Code ({selectedCompletedQuestion.language})</h3>
+                   <div className="border border-zinc-200 dark:border-white/5 rounded-2xl overflow-hidden min-h-[300px] bg-background">
                       <Editor
                         height="300px"
-                        theme="vs-dark"
+                        theme={theme === "dark" ? "vs-dark" : "light"}
                         language={selectedCompletedQuestion.language}
                         value={selectedCompletedQuestion.code}
                         options={{ readOnly: true, minimap: { enabled: false }, fontSize: 13 }}
@@ -777,79 +889,100 @@ export default function InterviewPage() {
           /* Active Interactive Workspace Grid Space */
           <>
             {/* Left Panel: Chat Interface */}
-            <div className="w-[32%] flex flex-col border-r border-[#161616] bg-zinc-950/50 shrink-0">
-               <div className="p-4 border-b border-white/5 flex items-center justify-between bg-black/40">
+            <div className="w-[32%] flex flex-col border-r border-zinc-200 dark:border-[#161616] bg-card/65 dark:bg-zinc-950/50 shrink-0">
+               <div className="p-4 border-b border-zinc-200 dark:border-white/5 flex items-center justify-between bg-zinc-50 dark:bg-black/40">
                   <div className="flex items-center gap-3">
                      <div className="h-8 w-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
                         <Bot size={18} className="text-primary" />
                      </div>
-                     <div>
-                        <p className="text-xs font-bold text-white uppercase tracking-wider font-sans">AI Interviewer</p>
-                        <Badge variant="outline" className="text-[9px] h-4 bg-emerald-500/10 text-emerald-500 border-none font-extrabold tracking-widest">ACTIVE</Badge>
+                     <div className="flex flex-col">
+                        <p className="text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-wider font-sans">AI Interviewer</p>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                           <span className="relative flex h-1.5 w-1.5">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                           </span>
+                           <span className="text-[8px] text-emerald-500 font-extrabold tracking-widest uppercase">ACTIVE</span>
+                           
+                           {/* Soundwave simulation */}
+                           <div className="flex items-center gap-0.5 ml-2.5 h-3 select-none">
+                              {[3, 5, 2, 4, 1.5].map((scale, barIdx) => (
+                                 <span 
+                                    key={barIdx} 
+                                    className="w-0.5 bg-primary/60 rounded-full animate-pulse" 
+                                    style={{ 
+                                       height: `${scale * 20}%`,
+                                       animationDuration: `${0.5 + barIdx * 0.15}s` 
+                                    }} 
+                                 />
+                              ))}
+                           </div>
+                        </div>
                      </div>
                   </div>
                   
                   <div className="flex items-center gap-4">
                      <div className="flex items-center gap-2 text-zinc-400">
-                        <Timer size={14} />
+                        <Timer size={14} className="text-primary animate-pulse" />
                         <span className="text-xs font-mono font-bold tracking-widest">{formatTime(timer)}</span>
                      </div>
                      <Button 
                        variant="destructive" 
                        size="sm" 
-                       className="h-8 text-[10px] font-bold uppercase tracking-widest px-4 shadow-lg shadow-red-500/10 cursor-pointer font-sans"
+                       className="h-8 text-[10px] font-bold uppercase tracking-widest px-4 shadow-lg shadow-red-500/10 cursor-pointer font-sans rounded-xl bg-rose-600/90 hover:bg-rose-605 text-white active:scale-[0.98] transition-transform"
                        onClick={handleFinish}
                        disabled={submitting}
                      >
                        {submitting ? <Loader2 size={12} className="animate-spin mr-2" /> : <Flag size={12} className="mr-2" />}
-                       Finish Session
+                       Finish
                      </Button>
                   </div>
                </div>
 
                <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-hide select-text">
                   {/* Active Question Title & Text Card */}
-                  <div className="p-5 rounded-2xl bg-zinc-900/40 border border-white/5 space-y-3">
+                  <div className="p-5 rounded-2xl bg-card dark:bg-zinc-950/60 border border-zinc-200 dark:border-white/5 space-y-3 relative overflow-hidden">
+                     <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 blur-[40px] -z-10" />
                      <div className="flex items-center justify-between">
                         <h3 className="text-xs font-black text-primary uppercase tracking-wider font-sans">Question {activeIndex + 1}</h3>
-                        <Badge className="bg-primary/10 text-primary border-none text-[9px] font-bold px-2 py-0.5 font-mono">
+                        <Badge className="bg-primary/10 text-primary border-none text-[9px] font-bold px-2.5 py-0.5 font-mono">
                            {currentQuestionText ? (currentQuestionText.includes("Hard") ? "Hard" : currentQuestionText.includes("Medium") ? "Medium" : "Easy") : "Medium"}
                         </Badge>
                      </div>
-                     <div className="text-xs text-zinc-350 select-text leading-relaxed font-sans max-h-40 overflow-y-auto pr-2 scrollbar-thin">
+                     <div className="text-xs text-zinc-700 dark:text-zinc-300 select-text leading-relaxed font-sans max-h-40 overflow-y-auto pr-2 scrollbar-thin">
                         {currentQuestionText ? renderFormattedText(currentQuestionText) : "Loading question..."}
                      </div>
                   </div>
 
-                  <div className="h-px bg-white/5 my-4" />
+                  <div className="h-px bg-zinc-200 dark:bg-white/5 my-4" />
 
                   {messages.map((msg, idx) => (
                     <div key={idx} className={cn(
-                      "flex gap-4 max-w-[92%]",
+                      "flex gap-3 max-w-[92%] animate-in fade-in slide-in-from-bottom-2 duration-300",
                       msg.role === "user" ? "ml-auto flex-row-reverse" : "mr-auto"
                     )}>
                        <div className={cn(
-                         "h-8 w-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-1 shadow-md",
-                         msg.role === "assistant" ? "bg-zinc-800 text-zinc-355 border border-white/5" : "bg-primary text-primary-foreground font-bold text-xs"
+                         "h-8 w-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-1 shadow-md border",
+                         msg.role === "assistant" ? "bg-zinc-100 dark:bg-zinc-900 border-zinc-200 dark:border-white/5 text-primary" : "bg-primary border-primary/20 text-primary-foreground font-bold text-xs"
                        )}>
                          {msg.role === "assistant" ? <Bot size={16} /> : <User size={16} />}
                        </div>
                        <div className={cn(
-                         "p-4 rounded-2xl text-sm leading-relaxed shadow-lg border",
+                         "p-4 rounded-2xl text-xs leading-relaxed border shadow-lg",
                          msg.role === "assistant" 
-                           ? "bg-zinc-900/80 text-zinc-200 border-white/5" 
-                           : "bg-primary/10 text-white border-primary/20 shadow-lg shadow-primary/5"
+                           ? "bg-zinc-100/50 dark:bg-zinc-900/60 text-zinc-800 dark:text-zinc-200 border-zinc-200 dark:border-white/5" 
+                           : "bg-primary/5 text-zinc-900 dark:text-white border-primary/20 dark:border-primary/25 shadow-md shadow-primary/5"
                        )}>
                          {msg.role === "assistant" ? renderFormattedText(msg.content) : msg.content}
                        </div>
                     </div>
                   ))}
                   {loading && (
-                    <div className="flex gap-4 animate-pulse">
-                       <div className="h-8 w-8 rounded-xl bg-zinc-800 flex items-center justify-center border border-white/5">
-                          <Bot size={16} className="text-zinc-550 animate-spin" />
+                    <div className="flex gap-3 animate-pulse">
+                       <div className="h-8 w-8 rounded-xl bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center border border-zinc-200 dark:border-white/5 text-zinc-600 dark:text-zinc-400">
+                          <Bot size={16} className="animate-spin" />
                        </div>
-                       <div className="p-4 rounded-2xl bg-zinc-900/50 text-zinc-500 text-xs italic border border-white/5">
+                       <div className="p-4 rounded-2xl bg-zinc-100/40 dark:bg-zinc-950/40 text-zinc-600 dark:text-zinc-400 text-xs italic border border-zinc-200 dark:border-white/5">
                           Interviewer is analyzing solution...
                        </div>
                     </div>
@@ -857,11 +990,11 @@ export default function InterviewPage() {
                   <div ref={chatEndRef} />
                </div>
 
-               <div className="p-6 bg-black/40 border-t border-white/5">
+               <div className="p-6 bg-zinc-50 dark:bg-black/40 border-t border-zinc-200 dark:border-white/5">
                   <div className="relative group">
                      <textarea 
                        placeholder="Explain your thought process..."
-                       className="w-full bg-zinc-900/50 border border-white/10 rounded-2xl p-4 pr-12 text-sm text-white placeholder:text-zinc-650 focus:border-primary/55 transition-all outline-none resize-none h-24"
+                       className="w-full bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-200 dark:border-white/10 rounded-2xl p-4 pr-12 text-xs text-zinc-900 dark:text-white placeholder:text-zinc-500 focus:border-primary/55 hover:border-zinc-300 dark:hover:border-white/20 transition-all outline-none resize-none h-24"
                        value={input}
                        onChange={(e) => setInput(e.target.value)}
                        onKeyDown={(e) => {
@@ -873,8 +1006,7 @@ export default function InterviewPage() {
                      />
                      <Button 
                        size="icon" 
-                       className="absolute bottom-4 right-4 h-8 w-8 rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 cursor-pointer"
-                       onChange={() => {}}
+                       className="absolute bottom-4 right-4 h-8 w-8 rounded-xl bg-primary hover:bg-primary/95 hover:scale-[1.03] shadow-lg shadow-primary/20 cursor-pointer active:scale-95 transition-all text-primary-foreground border-none"
                        onClick={handleSendMessage}
                        disabled={loading || !input.trim()}
                      >
@@ -885,12 +1017,12 @@ export default function InterviewPage() {
             </div>
 
             {/* Right Panel: Code Sandbox Editor & Test Panel */}
-      <div className="flex-1 flex flex-col bg-[#1e1e1e] relative">
+      <div className="flex-1 flex flex-col bg-background relative">
          {/* Sandbox Header */}
-         <div className="h-14 border-b border-white/5 flex items-center justify-between px-6 bg-zinc-900/60 z-10">
+         <div className="h-14 border-b border-zinc-200 dark:border-white/5 flex items-center justify-between px-6 bg-zinc-50 dark:bg-zinc-900/60 z-10">
             <div className="flex items-center gap-3">
                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] font-sans">Solution Sandbox</span>
-               <div className="h-4 w-px bg-white/10" />
+               <div className="h-4 w-px bg-zinc-200 dark:bg-white/10" />
                
                {/* Language Dropdown Select */}
                <select
@@ -960,7 +1092,7 @@ export default function InterviewPage() {
          <div className="flex-1 overflow-hidden select-text" style={{ height: `calc(100% - ${panelHeight + 56}px)` }}>
             <Editor
               height="100%"
-              theme="vs-dark"
+              theme={theme === "dark" ? "vs-dark" : "light"}
               language={language === "cpp" ? "cpp" : language === "java" ? "java" : language === "python" ? "python" : "javascript"}
               value={code}
               onChange={handleCodeChange}
@@ -986,101 +1118,106 @@ export default function InterviewPage() {
            <div className="h-0.5 w-6 rounded bg-zinc-700/60" />
          </div>
 
-         {/* Sandbox Test Runner Output */}
-         <div className="border-t border-white/5 bg-zinc-950 flex flex-col relative z-20" style={{ height: `${panelHeight}px` }}>
-            <div className="h-10 border-b border-white/5 flex items-center justify-between px-6 bg-black/40">
-               <div className="flex items-center gap-2">
-                  <Play size={12} className="text-primary" />
-                  <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest font-sans">Execution Report</span>
-               </div>
-               
-               {testResults && (
-                  <div className="flex items-center gap-2 animate-in fade-in duration-300">
-                     <span className="text-[10px] text-zinc-550 font-bold uppercase tracking-wider font-sans">VERDICT:</span>
-                     <Badge 
-                       className={cn(
-                          "text-[9px] font-extrabold uppercase px-2 py-0.5 border shadow-sm",
-                          testResults.success 
-                            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" 
-                            : "bg-rose-500/10 text-rose-400 border-rose-500/20"
-                       )}
-                     >
-                        {testResults.success ? "ACCEPTED" : "WRONG ANSWER"}
-                     </Badge>
-                  </div>
-               )}
-            </div>
-            
-            <div className="flex-1 flex overflow-hidden">
-               {/* Test Case Indicator Tabs */}
-               <div className="w-1/4 border-r border-white/5 flex flex-col divide-y divide-white/5 overflow-y-auto scrollbar-hide">
-                 {testResults ? (
-                   testResults.testCases.map((tc, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => setActiveTestTab(idx)}
+          {/* Sandbox Test Runner Output */}
+          <div className="border-t border-white/5 bg-zinc-950 flex flex-col relative z-20 overflow-hidden" style={{ height: `${panelHeight}px` }}>
+             <div className="h-10 border-b border-[#161616] flex items-center justify-between px-6 bg-black/40 select-none">
+                <div className="flex items-center gap-2">
+                   <Play size={12} className="text-primary fill-primary" />
+                   <span className="text-[10px] font-bold text-zinc-400 tracking-widest font-mono uppercase">Execution Report</span>
+                </div>
+                
+                {testResults && (
+                   <div className="flex items-center gap-2 animate-in fade-in duration-300">
+                      <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider font-mono">VERDICT:</span>
+                      <Badge 
                         className={cn(
-                           "p-3 text-left transition-all hover:bg-white/5 flex items-center justify-between outline-none cursor-pointer",
-                           activeTestTab === idx ? "bg-white/5 border-l-2 border-primary" : ""
+                           "text-[9px] font-extrabold uppercase px-2.5 py-0.5 border shadow-sm rounded-lg",
+                           testResults.success 
+                             ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" 
+                             : "bg-rose-500/10 text-rose-455 border-rose-500/20"
                         )}
                       >
-                         <span className="text-[10px] font-extrabold text-zinc-350 font-mono">Test Case {idx + 1}</span>
-                         {tc.passed ? (
-                            <CheckCircle2 size={12} className="text-emerald-500 flex-shrink-0" />
-                         ) : (
-                            <XCircle size={12} className="text-rose-500 flex-shrink-0" />
-                         )}
-                      </button>
-                   ))
-                 ) : (
-                   <div className="p-4 text-center text-[10px] text-zinc-650 font-bold font-mono">
-                      No Runs Logged
+                         {testResults.success ? "ACCEPTED" : "WRONG ANSWER"}
+                      </Badge>
                    </div>
-                 )}
-               </div>
-
-               {/* Tab Input/Expected/Output Panel */}
-               <div className="flex-1 p-4 overflow-y-auto space-y-4 select-text">
-                 {testResults ? (
-                    <div className="space-y-3 animate-in fade-in duration-300">
-                       <p className="text-[11px] text-zinc-400 italic font-sans">
-                          <strong className="text-zinc-300 uppercase tracking-widest text-[9px] mr-1.5 not-italic select-none font-sans">AI Mentor Feedback:</strong> 
-                          &quot;{testResults.feedback}&quot;
-                       </p>
-                       
-                       <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-0.5">
-                             <span className="text-[9px] font-bold text-zinc-550 uppercase tracking-widest select-none font-sans">Input</span>
-                             <pre className="p-2 bg-zinc-900 rounded-lg text-xs font-mono text-zinc-300 overflow-x-auto select-all max-h-12 scrollbar-hide">
-                                {testResults.testCases[activeTestTab]?.input}
-                             </pre>
-                          </div>
-                          
-                          <div className="space-y-0.5">
-                             <span className="text-[9px] font-bold text-zinc-555 uppercase tracking-widest select-none font-sans">Expected Output</span>
-                             <pre className="p-2 bg-zinc-900 rounded-lg text-xs font-mono text-zinc-300 overflow-x-auto select-all max-h-12 scrollbar-hide font-mono">
-                                {testResults.testCases[activeTestTab]?.expected}
-                             </pre>
-                          </div>
-                       </div>
-
-                       <div className="space-y-0.5">
-                          <span className="text-[9px] font-bold text-zinc-555 uppercase tracking-widest select-none font-sans">Candidate Output</span>
-                          <pre className={cn(
-                             "p-2 bg-zinc-900 rounded-lg text-xs font-mono overflow-x-auto select-all max-h-12 scrollbar-hide",
-                             testResults.testCases[activeTestTab]?.passed ? "text-emerald-450 bg-emerald-500/5 border border-emerald-500/10" : "text-rose-455 bg-rose-500/5 border border-rose-500/10"
-                          )}>
-                             {testResults.testCases[activeTestTab]?.output}
-                          </pre>
-                       </div>
+                )}
+             </div>
+             
+             <div className="flex-1 flex overflow-hidden">
+                {/* Test Case Indicator Tabs */}
+                <div className="w-1/4 border-r border-[#161616] flex flex-col divide-y divide-[#161616] overflow-y-auto scrollbar-hide select-none">
+                  {testResults ? (
+                    testResults.testCases.map((tc, idx) => (
+                       <button
+                         key={idx}
+                         onClick={() => setActiveTestTab(idx)}
+                         className={cn(
+                            "p-3 text-left transition-all hover:bg-white/5 flex items-center justify-between outline-none cursor-pointer border-l-2 text-xs",
+                            activeTestTab === idx ? "bg-zinc-900 border-primary text-white" : "border-transparent text-zinc-400 hover:text-white"
+                         )}
+                       >
+                          <span className="text-[10px] font-extrabold font-mono">Test Case {idx + 1}</span>
+                          {tc.passed ? (
+                             <CheckCircle2 size={12} className="text-emerald-500 flex-shrink-0" />
+                          ) : (
+                             <XCircle size={12} className="text-rose-500 flex-shrink-0" />
+                          )}
+                       </button>
+                    ))
+                  ) : (
+                    <div className="p-4 text-center text-[10px] text-zinc-600 font-bold font-mono">
+                       No Runs Logged
                     </div>
-                 ) : (
-                    <div className="h-full flex flex-col items-center justify-center text-center text-zinc-500 space-y-2 select-none">
-                       <Play size={20} className="text-zinc-650 animate-pulse" />
-                       <p className="text-xs font-sans">Write your implementation. Switch languages and click <strong className="text-primary font-bold">Run Tests</strong> to validate your solution.</p>
-                       <p className="text-[10px] text-zinc-600 font-mono">Dynamic AI evaluation handles normal, edge case, and performance inputs.</p>
-                    </div>
-                 )}
+                  )}
+                </div>
+ 
+                {/* Tab Input/Expected/Output Panel */}
+                <div className="flex-1 p-5 overflow-y-auto space-y-4 select-text">
+                  {testResults ? (
+                     <div className="space-y-4 animate-in fade-in duration-300">
+                        <div className="p-3.5 bg-primary/5 border border-primary/20 rounded-xl gap-2.5 flex items-start">
+                           <Sparkles size={14} className="text-primary mt-0.5 shrink-0" />
+                           <div className="text-xs text-zinc-300 leading-relaxed font-sans">
+                              <span className="text-primary uppercase tracking-widest text-[9px] font-extrabold block mb-0.5 select-none font-sans">AI Mentor Feedback</span> 
+                              &quot;{testResults.feedback}&quot;
+                           </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                           <div className="space-y-1">
+                              <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest select-none font-sans">Input</span>
+                              <pre className="p-3 bg-zinc-900/40 border border-white/5 rounded-xl text-xs font-mono text-zinc-300 overflow-x-auto select-all max-h-16 scrollbar-thin">
+                                 {testResults.testCases[activeTestTab]?.input}
+                              </pre>
+                           </div>
+                           
+                           <div className="space-y-1">
+                              <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest select-none font-sans">Expected Output</span>
+                              <pre className="p-3 bg-zinc-900/40 border border-white/5 rounded-xl text-xs font-mono text-zinc-300 overflow-x-auto select-all max-h-16 scrollbar-thin">
+                                 {testResults.testCases[activeTestTab]?.expected}
+                              </pre>
+                           </div>
+                        </div>
+ 
+                        <div className="space-y-1">
+                           <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest select-none font-sans">Candidate Output</span>
+                           <pre className={cn(
+                              "p-3 rounded-xl text-xs font-mono overflow-x-auto select-all max-h-16 scrollbar-thin border",
+                              testResults.testCases[activeTestTab]?.passed 
+                                ? "text-emerald-450 bg-emerald-500/5 border-emerald-500/10" 
+                                : "text-rose-455 bg-rose-500/5 border-rose-500/10"
+                           )}>
+                              {testResults.testCases[activeTestTab]?.output}
+                           </pre>
+                        </div>
+                     </div>
+                  ) : (
+                     <div className="h-full flex flex-col items-center justify-center text-center text-zinc-550 space-y-2 select-none">
+                        <Play size={20} className="text-zinc-[650] animate-pulse" />
+                        <p className="text-xs font-sans text-zinc-400">Write your implementation. Switch languages and click <strong className="text-primary font-bold">Run Tests</strong> to validate your solution.</p>
+                        <p className="text-[10px] text-zinc-650 font-mono">Dynamic AI evaluation handles normal, edge case, and performance inputs.</p>
+                     </div>
+                  )}
                 </div>
              </div>
           </div>
@@ -1091,105 +1228,118 @@ export default function InterviewPage() {
 
       {/* Evaluation Results Overlay */}
       {mode === "evaluation" && session?.evaluation && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 backdrop-blur-md bg-black/80 animate-in fade-in duration-500">
-           <Card className="w-full max-w-2xl bg-zinc-950 border-white/10 shadow-2xl relative overflow-hidden">
-              {/* Background Accent */}
-              <div className={cn(
-                "absolute top-0 inset-x-0 h-1.5",
-                session.evaluation.verdict.includes("HIRE") ? "bg-emerald-500" : "bg-red-500"
-              )} />
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 backdrop-blur-md bg-black/85 animate-in fade-in duration-500 select-text">
+           <Card className="w-full max-w-2xl bg-zinc-950/90 border border-white/10 shadow-2xl relative overflow-hidden rounded-3xl">
+              {/* Background gradient lights */}
+              <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-primary via-purple-500 to-emerald-500" />
+              <div className="absolute -top-12 -right-12 w-48 h-48 bg-primary/10 blur-[80px] rounded-full -z-10" />
+              <div className="absolute -bottom-12 -left-12 w-48 h-48 bg-emerald-500/5 blur-[80px] rounded-full -z-10" />
               
-              <CardHeader className="text-center pb-2">
-                 <div className="mx-auto h-16 w-16 rounded-full bg-zinc-900 border border-white/5 flex items-center justify-center mb-4">
-                    <Trophy size={32} className="text-primary" />
+              <CardHeader className="text-center pb-2 pt-8">
+                 <div className="mx-auto h-16 w-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-4 shadow-lg shadow-primary/5 animate-pulse">
+                    <Trophy size={30} className="text-primary" />
                  </div>
-                 <CardTitle className="text-2xl font-bold text-white tracking-tight">Interview Complete</CardTitle>
-                 <CardDescription className="uppercase tracking-widest text-[10px] font-bold text-zinc-500 font-sans">Evaluation Summary</CardDescription>
+                 <CardTitle className="text-2xl font-bold text-white tracking-tight font-sans">Interview Completed</CardTitle>
+                 <CardDescription className="uppercase tracking-widest text-[9px] font-extrabold text-zinc-500 font-mono mt-1">Diagnostic AI Report & Breakdown</CardDescription>
               </CardHeader>
               
-              <CardContent className="space-y-6 select-text">
+              <CardContent className="space-y-6 px-8 pb-8">
+                 {/* Score dials/cards */}
                  <div className="grid grid-cols-3 gap-4">
                     {[
-                      { label: "Logic", value: session.evaluation.logicScore, color: "text-blue-500" },
-                      { label: "Quality", value: session.evaluation.codeQualityScore, color: "text-emerald-500" },
-                      { label: "Comm.", value: session.evaluation.communicationScore, color: "text-primary" }
+                      { label: "Execution Logic", value: session.evaluation.logicScore, color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/15" },
+                      { label: "Code Quality & Cleanliness", value: session.evaluation.codeQualityScore, color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/15" },
+                      { label: "Communication Flow", value: session.evaluation.communicationScore, color: "text-primary", bg: "bg-primary/10 border-primary/15" }
                     ].map((s) => (
-                      <div key={s.label} className="p-4 rounded-2xl bg-white/5 border border-white/5 text-center">
-                         <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">{s.label}</p>
-                         <p className={cn("text-2xl font-bold font-mono", s.color)}>{s.value}%</p>
+                      <div key={s.label} className={`p-4.5 rounded-2xl border text-center ${s.bg} backdrop-blur-sm relative overflow-hidden group`}>
+                         <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider mb-2.5 truncate font-sans">{s.label.split(" ")[0]}</p>
+                         <p className={cn("text-2xl font-black font-mono tracking-tight", s.color)}>{s.value}%</p>
+                         <div className="w-12 h-1 bg-white/5 mx-auto mt-3 rounded-full overflow-hidden">
+                            <div className={`h-full ${s.color.replace('text-', 'bg-')}`} style={{ width: `${s.value}%` }} />
+                         </div>
                       </div>
                     ))}
                  </div>
 
-                 <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10">
-                    <h4 className="text-xs font-bold text-primary uppercase tracking-widest mb-2 flex items-center gap-2 font-sans">
-                       <CheckCircle2 size={14} /> Overall Feedback
+                 {/* Overall feedback */}
+                 <div className="p-5 rounded-2xl bg-primary/5 border border-primary/20 backdrop-blur-sm relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 blur-[30px] -z-10" />
+                    <h4 className="text-xs font-black text-primary uppercase tracking-widest mb-2 flex items-center gap-2 font-mono">
+                       <Sparkles size={14} className="animate-spin" style={{ animationDuration: '4s' }} /> Overall Mentor Diagnostic
                     </h4>
-                    <p className="text-sm text-zinc-300 leading-relaxed italic">
-                      &#34;{session.evaluation.overallFeedback}&#34;
+                    <p className="text-xs text-zinc-300 leading-relaxed italic font-sans">
+                       &quot;{session.evaluation.overallFeedback}&quot;
                     </p>
                  </div>
 
-                 <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                       <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest flex items-center gap-2 font-sans">
-                          <CheckCircle2 size={12} /> Key Strengths
+                 {/* Strengths & Weaknesses */}
+                 <div className="grid grid-cols-2 gap-6 pt-2">
+                    <div className="space-y-3">
+                       <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-2 font-sans select-none">
+                          <CheckCircle2 size={13} className="text-emerald-400" /> Key Strengths
                        </p>
-                       <ul className="space-y-1">
-                          {session.evaluation.strengths && session.evaluation.strengths.map((s: string) => (
-                            <li key={s} className="text-xs text-zinc-400">• {s}</li>
+                       <ul className="space-y-2">
+                          {session.evaluation.strengths && session.evaluation.strengths.map((s: string, idx: number) => (
+                            <li key={idx} className="text-xs text-zinc-350 flex items-start gap-1.5">
+                               <span className="text-emerald-500/80 select-none font-bold mt-0.5">•</span>
+                               <span className="font-sans leading-relaxed">{s}</span>
+                            </li>
                           ))}
                        </ul>
                     </div>
-                    <div className="space-y-2">
-                       <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2 font-sans">
-                          <XCircle size={12} /> Improvement Areas
+                    
+                    <div className="space-y-3">
+                       <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-2 font-sans select-none">
+                          <XCircle size={13} className="text-zinc-550" /> Target Improvements
                        </p>
-                       <ul className="space-y-1">
-                          {session.evaluation.weaknesses && session.evaluation.weaknesses.map((w: string) => (
-                            <li key={w} className="text-xs text-zinc-650">• {w}</li>
+                       <ul className="space-y-2">
+                          {session.evaluation.weaknesses && session.evaluation.weaknesses.map((w: string, idx: number) => (
+                            <li key={idx} className="text-xs text-zinc-400 flex items-start gap-1.5">
+                               <span className="text-zinc-600 select-none font-bold mt-0.5">•</span>
+                               <span className="font-sans leading-relaxed">{w}</span>
+                            </li>
                           ))}
                        </ul>
                     </div>
                  </div>
 
-                 <div className="flex items-center justify-between pt-6 border-t border-white/5">
+                 <div className="flex items-center justify-between pt-6 border-t border-white/5 select-none">
                     <div className="flex items-center gap-4">
-                       <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest font-sans">Final Verdict</p>
+                       <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest font-mono">Verdict</p>
                        <Badge className={cn(
-                          "px-4 h-8 rounded-full font-bold",
-                          session.evaluation.verdict === "STRONG HIRE" ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20" :
-                          session.evaluation.verdict === "HIRE" ? "bg-primary text-white shadow-lg shadow-primary/20" :
+                          "px-4.5 h-8 rounded-xl font-bold font-sans text-xs flex items-center justify-center border-none shadow-lg transition-all",
+                          session.evaluation.verdict === "STRONG HIRE" ? "bg-emerald-555 text-white bg-emerald-600 shadow-emerald-555/15" :
+                          session.evaluation.verdict === "HIRE" ? "bg-primary text-primary-foreground shadow-primary/10" :
                           "bg-zinc-800 text-zinc-400"
                        )}>
                           {session.evaluation.verdict}
                        </Badge>
                     </div>
                     
-                    <div className="flex items-center gap-3">
-                      <Button 
-                        variant="outline"
-                        className="rounded-xl h-10 gap-2 border-white/10 bg-zinc-900 text-zinc-400 hover:text-white"
-                        onClick={downloadReport}
-                      >
-                         <Download size={14} />
-                         Download PDF
-                      </Button>
-                      
-                      <Button 
-                        variant="outline"
-                        className="rounded-xl h-10 px-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold border-zinc-700"
-                        onClick={handleReattempt}
-                      >
-                         Attempt Again
-                      </Button>
-
-                      <Button 
-                        className="rounded-xl h-10 px-6 bg-primary text-primary-foreground hover:opacity-90 font-bold"
-                        onClick={() => window.location.href = "/dashboard"}
-                      >
-                        Dashboard
-                      </Button>
+                    <div className="flex items-center gap-2">
+                       <Button 
+                         variant="outline"
+                         className="rounded-xl h-10 gap-2 border-white/10 bg-zinc-900/50 hover:bg-zinc-900 text-zinc-300 hover:text-white"
+                         onClick={downloadReport}
+                       >
+                          <Download size={13} />
+                          Download PDF
+                       </Button>
+                       
+                       <Button 
+                         variant="outline"
+                         className="rounded-xl h-10 px-4 bg-zinc-900 border-white/10 hover:bg-zinc-800 text-zinc-305 hover:text-white font-bold"
+                         onClick={handleReattempt}
+                       >
+                          Attempt Again
+                       </Button>
+ 
+                       <Button 
+                         className="rounded-xl h-10 px-5 bg-primary hover:bg-primary/95 text-primary-foreground font-bold shadow-lg shadow-primary/15 transition-all text-xs"
+                         onClick={() => window.location.href = "/dashboard"}
+                       >
+                         Done
+                       </Button>
                     </div>
                  </div>
               </CardContent>

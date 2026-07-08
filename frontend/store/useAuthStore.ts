@@ -22,6 +22,7 @@ interface AuthState {
   register: (data: Record<string, unknown>) => Promise<void>;
   logout: () => void;
   checkAuth: () => Promise<void>;
+  updateUser: (user: User) => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -106,5 +107,10 @@ export const useAuthStore = create<AuthState>((set) => ({
       // Safety net: ensure loading is always resolved
       set((state) => (state.loading ? { loading: false } : {}));
     }
+  },
+
+  updateUser: (user: User) => {
+    const onboardingComplete = !!(user.role && user.target_domain);
+    set({ user, onboardingComplete });
   },
 }));
