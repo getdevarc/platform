@@ -109,9 +109,17 @@ interface CuratedResource {
   }>;
 }
 
+interface PlatformSettingValue {
+  limit?: number;
+  level?: string;
+  enabled?: boolean;
+  allowed?: boolean;
+  [key: string]: unknown;
+}
+
 interface PlatformSetting {
   key: string;
-  value: Record<string, any> | { limit: number } | { level: string } | { enabled: boolean } | { allowed: boolean };
+  value: PlatformSettingValue | { limit: number } | { level: string } | { enabled: boolean } | { allowed: boolean };
   description?: string;
   updated_at: string;
   updated_by_name?: string;
@@ -313,7 +321,7 @@ export default function AdminPage() {
 
   // Curated Resources operations
   // Platform Settings Save Handler
-  const handleSaveSetting = async (settingKey: string, settingValue: any, settingDescription?: string) => {
+  const handleSaveSetting = async (settingKey: string, settingValue: PlatformSettingValue, settingDescription?: string) => {
     try {
       await api.put(`/admin/settings/${settingKey}`, {
         value: settingValue,
@@ -865,7 +873,7 @@ export default function AdminPage() {
                   description = "Controls whether new visitor registration is enabled.";
                 }
 
-                const val = (setting.value || {}) as Record<string, any>;
+                const val = (setting.value || {}) as PlatformSettingValue;
 
                 return (
                   <div key={setting.key} className="p-6 rounded-2xl bg-card border border-border flex flex-col justify-between space-y-4">

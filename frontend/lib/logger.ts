@@ -16,7 +16,7 @@ function canLog(level: LogLevel): boolean {
 }
 
 export const logger = {
-    debug(module: string, message: string, metadata?: any) {
+    debug(module: string, message: string, metadata?: unknown) {
         if (!canLog("debug")) return;
         console.debug(
             `%c[DEBUG] [${module}] %c${message}`,
@@ -26,7 +26,7 @@ export const logger = {
         );
     },
 
-    info(module: string, message: string, metadata?: any) {
+    info(module: string, message: string, metadata?: unknown) {
         if (!canLog("info")) return;
         console.info(
             `%c[INFO] [${module}] %c${message}`,
@@ -36,7 +36,7 @@ export const logger = {
         );
     },
 
-    warn(module: string, message: string, metadata?: any) {
+    warn(module: string, message: string, metadata?: unknown) {
         if (!canLog("warn")) return;
         console.warn(
             `%c[WARN] [${module}] %c${message}`,
@@ -46,7 +46,7 @@ export const logger = {
         );
     },
 
-    error(module: string, message: string, metadata?: any) {
+    error(module: string, message: string, metadata?: unknown) {
         if (!canLog("error")) return;
         console.error(
             `%c[ERROR] [${module}] %c${message}`,

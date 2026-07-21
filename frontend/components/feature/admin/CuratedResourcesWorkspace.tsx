@@ -47,6 +47,36 @@ interface LearningModule {
   sort_order: number;
 }
 
+interface PageItem {
+  id: string;
+  title: string;
+  slug: string;
+  status: string;
+  display_order: number;
+  difficulty?: string;
+  estimated_minutes?: number;
+  content?: string;
+  learning_objectives?: string;
+  code_snippets?: string;
+  best_practices?: string;
+  common_mistakes?: string;
+  real_world_examples?: string;
+  summary?: string;
+  prerequisites?: string;
+  previous_page_id?: string | null;
+  next_page_id?: string | null;
+  updated_by_name?: string;
+  updated_at?: string;
+}
+
+interface CmsApiError {
+  response?: {
+    data?: {
+      error?: string;
+    };
+  };
+}
+
 interface CuratedResource {
   id: string;
   title: string;
@@ -74,7 +104,7 @@ interface Props {
 export default function CuratedResourcesWorkspace({ tracksList, fetchAllData, onNavigateToTracks }: Props) {
   // Tree state management
   const [trackModulesMap, setTrackModulesMap] = useState<Record<string, LearningModule[]>>({});
-  const [modulePagesMap, setModulePagesMap] = useState<Record<string, any[]>>({});
+  const [modulePagesMap, setModulePagesMap] = useState<Record<string, PageItem[]>>({});
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
   const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
   const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
@@ -131,7 +161,7 @@ export default function CuratedResourcesWorkspace({ tracksList, fetchAllData, on
   // Load pages lazily on-demand
   const loadModulePages = useCallback(async (moduleId: string) => {
     try {
-      const res = await api.get<ApiResponse<any[]>>(`/admin/modules/${moduleId}/pages`);
+      const res = await api.get<ApiResponse<PageItem[]>>(`/admin/modules/${moduleId}/pages`);
       if (res.data.success) {
         setModulePagesMap(prev => ({
           ...prev,
@@ -280,9 +310,9 @@ export default function CuratedResourcesWorkspace({ tracksList, fetchAllData, on
           setEditingResource(null);
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      const errMsg = err.response?.data?.error || "Failed to save curated resource.";
+      const errMsg = (err as CmsApiError).response?.data?.error || "Failed to save curated resource.";
       toast.error(errMsg);
     } finally {
       setSavingResource(false);
@@ -397,7 +427,7 @@ export default function CuratedResourcesWorkspace({ tracksList, fetchAllData, on
     return modPages.some(p => p.title.toLowerCase().includes(query));
   }, [treeSearchQuery, modulePagesMap]);
 
-  const isPageVisible = useCallback((page: any) => {
+  const isPageVisible = useCallback((page: PageItem) => {
     if (!treeSearchQuery) return true;
     return page.title.toLowerCase().includes(treeSearchQuery.toLowerCase());
   }, [treeSearchQuery]);
@@ -417,7 +447,7 @@ export default function CuratedResourcesWorkspace({ tracksList, fetchAllData, on
               <Folder className="h-10 w-10 text-muted-foreground/40 mb-3 animate-pulse" />
               <p className="text-sm font-bold text-foreground">Empty Lesson Module</p>
               <p className="text-xs text-muted-foreground mt-1 max-w-[320px] mb-4">
-                This study module currently has no lesson pages. Curated resources must be bound to pages to be active in the learner's syllabus.
+                This study module currently has no lesson pages. Curated resources must be bound to pages to be active in the learner&apos;s syllabus.
               </p>
               {onNavigateToTracks && (
                 <button
@@ -878,7 +908,7 @@ export default function CuratedResourcesWorkspace({ tracksList, fetchAllData, on
 interface TrackNodeProps {
   track: LearningTrack;
   trackModules: LearningModule[];
-  modulePagesMap: Record<string, any[]>;
+  modulePagesMap: Record<string, PageItem[]>;
   expandedNodes: Record<string, boolean>;
   treeSearchQuery: string;
   selectedTrackId: string | null;
@@ -889,7 +919,7 @@ interface TrackNodeProps {
   onSelectModule: (trackId: string, moduleId: string) => void;
   onSelectPage: (trackId: string, moduleId: string, pageId: string) => void;
   isModuleVisible: (mod: LearningModule) => boolean;
-  isPageVisible: (page: any) => boolean;
+  isPageVisible: (page: PageItem) => boolean;
 }
 
 const TrackNode = React.memo(function TrackNode({

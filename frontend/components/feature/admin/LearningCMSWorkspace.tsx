@@ -49,6 +49,15 @@ interface LearningModule {
   sort_order: number;
 }
 
+interface ResourceMetadata {
+  health_status?: string;
+  last_checked_at?: string | null;
+  estimated_reading_time?: number;
+  language?: string;
+  display_order?: number;
+  [key: string]: unknown;
+}
+
 interface CuratedResource {
   id: string;
   title: string;
@@ -56,7 +65,7 @@ interface CuratedResource {
   source: string;
   reason?: string;
   tags: string[];
-  metadata: Record<string, unknown>;
+  metadata: ResourceMetadata;
   category: string;
   provider: string;
   difficulty: string;
@@ -69,6 +78,49 @@ interface CuratedResource {
   }>;
 }
 
+interface PageItem {
+  id: string;
+  title: string;
+  slug: string;
+  status: string;
+  display_order: number;
+  difficulty?: string;
+  estimated_minutes?: number;
+  content?: string;
+  learning_objectives?: string;
+  code_snippets?: string;
+  best_practices?: string;
+  common_mistakes?: string;
+  real_world_examples?: string;
+  summary?: string;
+  prerequisites?: string;
+  previous_page_id?: string | null;
+  next_page_id?: string | null;
+  updated_by_name?: string;
+  updated_at?: string;
+}
+
+interface CmsApiError {
+  response?: {
+    data?: {
+      error?: string;
+    };
+  };
+}
+
+interface PageDraft {
+  difficulty?: string;
+  estimated_minutes?: number;
+  learning_objectives?: string;
+  markdown_content?: string;
+  content?: string;
+  code_snippets?: string;
+  best_practices?: string;
+  common_mistakes?: string;
+  real_world_examples?: string;
+  summary?: string;
+}
+
 interface Props {
   tracksList: LearningTrack[];
   resourcesList: CuratedResource[];
@@ -78,7 +130,7 @@ interface Props {
 export default function LearningCMSWorkspace({ tracksList, resourcesList, fetchAllData }: Props) {
   // Tree & search states
   const [trackModulesMap, setTrackModulesMap] = useState<Record<string, LearningModule[]>>({});
-  const [modulePagesMap, setModulePagesMap] = useState<Record<string, any[]>>({});
+  const [modulePagesMap, setModulePagesMap] = useState<Record<string, PageItem[]>>({});
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
   const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
   const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
@@ -204,7 +256,7 @@ export default function LearningCMSWorkspace({ tracksList, resourcesList, fetchA
   // Load pages lazily
   const loadModulePages = async (moduleId: string) => {
     try {
-      const res = await api.get<ApiResponse<any[]>>(`/admin/modules/${moduleId}/pages`);
+      const res = await api.get<ApiResponse<PageItem[]>>(`/admin/modules/${moduleId}/pages`);
       setModulePagesMap(prev => ({ ...prev, [moduleId]: res.data.data }));
     } catch {
       toast.error("Failed to load pages.");
@@ -243,7 +295,7 @@ export default function LearningCMSWorkspace({ tracksList, resourcesList, fetchA
     }
   };
 
-  const handleSelectPage = (page: any) => {
+  const handleSelectPage = (page: PageItem) => {
     setSelectedPageId(page.id);
     setIsGlobalSelected(false);
     setCmsPageForm({
@@ -277,8 +329,9 @@ export default function LearningCMSWorkspace({ tracksList, resourcesList, fetchA
       setShowAddTrackModal(false);
       setTrackForm({ slug: "", title: "", description: "", difficulty: "beginner", estimated_hours: 10, icon: "book-open", status: "ACTIVE", display_order: 1 });
       fetchAllData();
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || "Create track failed.");
+    } catch (err: unknown) {
+      const apiErr = err as CmsApiError;
+      toast.error(apiErr.response?.data?.error || "Create track failed.");
     }
   };
 
@@ -295,8 +348,9 @@ export default function LearningCMSWorkspace({ tracksList, resourcesList, fetchA
       setNewModuleTitle("");
       setAddingModuleTrackId(null);
       loadTrackModules(addingModuleTrackId);
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || "Failed to create module.");
+    } catch (err: unknown) {
+      const apiErr = err as CmsApiError;
+      toast.error(apiErr.response?.data?.error || "Failed to create module.");
     }
   };
 
@@ -304,7 +358,7 @@ export default function LearningCMSWorkspace({ tracksList, resourcesList, fetchA
   const handleCreatePage = async () => {
     if (!addingPageModuleId || !newPageTitle || !newPageSlug) return;
     try {
-      const res = await api.post<ApiResponse<any>>(`/admin/modules/${addingPageModuleId}/pages`, {
+      const res = await api.post<ApiResponse<PageItem>>(`/admin/modules/${addingPageModuleId}/pages`, {
         title: newPageTitle,
         slug: newPageSlug
       });
@@ -314,8 +368,9 @@ export default function LearningCMSWorkspace({ tracksList, resourcesList, fetchA
       setAddingPageModuleId(null);
       await loadModulePages(addingPageModuleId);
       handleSelectPage(res.data.data);
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || "Failed to create page.");
+    } catch (err: unknown) {
+      const apiErr = err as CmsApiError;
+      toast.error(apiErr.response?.data?.error || "Failed to create page.");
     }
   };
 
@@ -330,14 +385,15 @@ export default function LearningCMSWorkspace({ tracksList, resourcesList, fetchA
         previous_page_id: cmsPageForm.previous_page_id || null,
         next_page_id: cmsPageForm.next_page_id || null
       };
-      const res = await api.put<ApiResponse<any>>(`/admin/pages/${selectedPageId}`, payload);
+      const res = await api.put<ApiResponse<PageItem>>(`/admin/pages/${selectedPageId}`, payload);
       toast.success("Page updated and saved to Database.");
       if (selectedModuleId) {
         loadModulePages(selectedModuleId);
       }
       handleSelectPage(res.data.data);
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || "Failed to save page changes.");
+    } catch (err: unknown) {
+      const apiErr = err as CmsApiError;
+      toast.error(apiErr.response?.data?.error || "Failed to save page changes.");
     } finally {
       setSavingPage(false);
     }
@@ -350,8 +406,9 @@ export default function LearningCMSWorkspace({ tracksList, resourcesList, fetchA
       toast.success("Page deleted successfully.");
       setSelectedPageId(null);
       if (selectedModuleId) loadModulePages(selectedModuleId);
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || "Delete failed.");
+    } catch (err: unknown) {
+      const apiErr = err as CmsApiError;
+      toast.error(apiErr.response?.data?.error || "Delete failed.");
     }
   };
 
@@ -378,7 +435,7 @@ export default function LearningCMSWorkspace({ tracksList, resourcesList, fetchA
     }
   };
 
-  const handleMovePage = async (pageId: string, direction: "up" | "down", siblingPages: any[], moduleId: string) => {
+  const handleMovePage = async (pageId: string, direction: "up" | "down", siblingPages: PageItem[], moduleId: string) => {
     const idx = siblingPages.findIndex(p => p.id === pageId);
     if (idx === -1) return;
     const newIdx = direction === "up" ? idx - 1 : idx + 1;
@@ -406,7 +463,7 @@ export default function LearningCMSWorkspace({ tracksList, resourcesList, fetchA
     setSparkingDraft(true);
     toast.info("Invoking LLM for structured lesson content template...", { duration: 3000 });
     try {
-      const res = await api.post<ApiResponse<any>>(`/admin/pages/${selectedPageId}/draft`);
+      const res = await api.post<ApiResponse<PageDraft>>(`/admin/pages/${selectedPageId}/draft`);
       const draft = res.data.data;
       setCmsPageForm(prev => ({
         ...prev,
@@ -422,8 +479,9 @@ export default function LearningCMSWorkspace({ tracksList, resourcesList, fetchA
       }));
       toast.success("AI draft generated. Review the fields and click Save at the top to commit.");
       setEditorTab("edit");
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || "AI Generation failed.");
+    } catch (err: unknown) {
+      const apiErr = err as CmsApiError;
+      toast.error(apiErr.response?.data?.error || "AI Generation failed.");
     } finally {
       setSparkingDraft(false);
     }
@@ -494,11 +552,11 @@ ${cmsPageForm.summary}
     try {
       let savedResource;
       if (editingResourceId) {
-        const res = await api.put<ApiResponse<any>>(`/admin/resources/${editingResourceId}`, payload);
+        const res = await api.put<ApiResponse<CuratedResource>>(`/admin/resources/${editingResourceId}`, payload);
         savedResource = res.data.data;
         toast.success("Resource updated successfully.");
       } else {
-        const res = await api.post<ApiResponse<any>>("/admin/resources", payload);
+        const res = await api.post<ApiResponse<CuratedResource>>("/admin/resources", payload);
         savedResource = res.data.data;
         toast.success("Resource created successfully.");
 
@@ -541,8 +599,9 @@ ${cmsPageForm.summary}
         tagsStr: ""
       });
       await fetchAllData();
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || "Save resource failed.");
+    } catch (err: unknown) {
+      const apiErr = err as CmsApiError;
+      toast.error(apiErr.response?.data?.error || "Save resource failed.");
     }
   };
 
@@ -715,7 +774,7 @@ ${cmsPageForm.summary}
     return modPages.some(p => p.title.toLowerCase().includes(query));
   };
 
-  const isPageVisible = (page: any) => {
+  const isPageVisible = (page: PageItem) => {
     if (!treeSearchQuery) return true;
     return page.title.toLowerCase().includes(treeSearchQuery.toLowerCase());
   };
@@ -744,7 +803,7 @@ ${cmsPageForm.summary}
   };
 
 
-  const handleStartEditResource = (res: any) => {
+  const handleStartEditResource = (res: CuratedResource) => {
     setEditingResourceId(res.id);
     setResourceForm({
       title: res.title || "",
@@ -756,9 +815,9 @@ ${cmsPageForm.summary}
       difficulty: res.difficulty || "beginner",
       is_official: res.is_official || false,
       type: res.type || "article",
-      estimated_reading_time: res.estimated_reading_time || 0,
-      language: res.language || "en",
-      display_order: res.display_order || 1,
+      estimated_reading_time: res.metadata.estimated_reading_time || 0,
+      language: res.metadata.language || "en",
+      display_order: res.metadata.display_order || 1,
       tagsStr: Array.isArray(res.tags) ? res.tags.join(", ") : ""
     });
   };
@@ -825,7 +884,7 @@ ${cmsPageForm.summary}
             <div className="grid grid-cols-1 gap-3">
               {associatedResources.map(res => {
                 const assoc = res.associations.find(a => a.type === scopeType && a.id === scopeId);
-                const health = (res.metadata as any)?.health_status || "unchecked";
+                const health = res.metadata.health_status || "unchecked";
 
                 return (
                   <div key={res.id} className="p-4 bg-card border border-border rounded-xl space-y-3 relative group">
@@ -847,10 +906,10 @@ ${cmsPageForm.summary}
                           <span>{res.provider}</span>
                           <span>•</span>
                           <span>{res.difficulty}</span>
-                          {(res.metadata as any)?.estimated_reading_time && (
+                          {res.metadata.estimated_reading_time && (
                             <>
                               <span>•</span>
-                              <span>{(res.metadata as any).estimated_reading_time} min read</span>
+                              <span>{res.metadata.estimated_reading_time} min read</span>
                             </>
                           )}
                         </div>
