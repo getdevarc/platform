@@ -33,7 +33,7 @@ export default function RootLayout({
         className="font-sans antialiased bg-background text-foreground"
         suppressHydrationWarning
       >
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
           <AuthInitializer />
           {children}
           <GlobalLoader />

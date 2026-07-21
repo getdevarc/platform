@@ -1,25 +1,31 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { api, ApiResponse } from "@/lib/api";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { 
   Compass, 
   Target, 
   Map as MapIcon, 
   ChevronRight, 
-  Zap, 
   Code,
   Sparkles,
   CheckCircle2,
   Circle,
   Loader2,
   BrainCircuit,
-  GraduationCap,
-  X
+  X,
+  BookOpen,
+  ExternalLink,
+  ClipboardList,
+  CheckSquare,
+  HelpCircle,
+  Clock,
+  Briefcase
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -31,195 +37,262 @@ interface RoadmapStep {
   title: string;
   description: string;
   type: "dsa" | "project" | "skill";
-  status: "locked" | "current" | "completed";
+  status: "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED" | "SKIPPED" | "REVISIT";
+  duration: number;
 }
 
-interface Roadmap {
+interface CareerPlan {
+  summary: string;
+  estimated_timeline: string;
+}
+
+interface UserProfile {
+  role: string | null;
+  target_domain: string | null;
+  career_answers: string | Record<string, unknown> | null;
+}
+
+interface RecommendationTrack {
   id: string;
-  goal: string;
-  content: {
-    rawContent: string;
-    steps: RoadmapStep[];
-  };
+  slug: string;
+  title: string;
+  description: string;
+  difficulty: string;
+  estimated_hours: number;
+  icon: string;
+  status: "Not Started" | "Active" | "Completed";
+  whyExplanation: string;
+}
+
+interface RecommendationData {
+  isOnboarded: boolean;
+  targetRole?: string;
+  dreamCompany?: string;
+  recommendations: RecommendationTrack[];
+}
+
+interface RoadmapResponse {
+  user: UserProfile;
+  careerPlan: CareerPlan | null;
+  steps: RoadmapStep[];
+  recommendationData?: RecommendationData;
+}
+
+interface Resource {
+  title: string;
+  url: string;
+  source: string;
+  reason: string;
+}
+
+interface ProjectTask {
+  id: string;
+  title: string;
+  completed: boolean;
+  difficulty: string;
+  estimatedTime: string;
+}
+
+interface PracticeProject {
+  title: string;
+  description: string;
+  difficulty: string;
+  estimated_time: string;
+  tasks: ProjectTask[];
+}
+
+interface InterviewPrep {
+  difficulty: string;
+  question_text: string;
+  expected_answer: string;
+  tags: string[];
+  estimated_duration: number;
+}
+
+interface RevisionItem {
+  title: string;
+  completed: boolean;
+}
+
+interface StepDetails {
+  guide: { content: string } | null;
+  resources: Resource[];
+  projects: PracticeProject[];
+  interviewPreps: InterviewPrep[];
+  revisionChecklist: RevisionItem[];
 }
 
 export default function CareerPage() {
+  const router = useRouter();
   const { user } = useAuthStore();
-  const [roadmap, setRoadmap] = useState<Roadmap | null>(null);
+  const [profileData, setProfileData] = useState<UserProfile | null>(null);
+  const [careerPlan, setCareerPlan] = useState<CareerPlan | null>(null);
+  const [steps, setSteps] = useState<RoadmapStep[]>([]);
+  const [recData, setRecData] = useState<RecommendationData | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
 
-  // Dynamic state hooks for upgraded features
-  // Dynamic state hooks for upgraded features
-  const [selectedTimelineStep, setSelectedTimelineStep] = useState<RoadmapStep | null>(null);
-  const [aiReportGenerating, setAiReportGenerating] = useState(false);
-  const [aiReportContent, setAiReportContent] = useState<string | null>(null);
-  const [nodeStatuses, setNodeStatuses] = useState<Record<string, "todo" | "progress" | "completed">>({});
-  const [projectPlan, setProjectPlan] = useState<string | null>(null);
-  const [generatingProject, setGeneratingProject] = useState(false);
+  // Active workspace / lazy assets states
+  const [activeStep, setActiveStep] = useState<RoadmapStep | null>(null);
+  const [stepDetails, setStepDetails] = useState<StepDetails | null>(null);
+  const [loadingDetails, setLoadingDetails] = useState(false);
+  const [activeTab, setActiveTab] = useState<"guide" | "resources" | "projects" | "interview" | "revision">("guide");
 
-  // Custom path prompt modal states
+  const [expandedQuestions, setExpandedQuestions] = useState<Record<number, boolean>>({});
+
+  // Onboarding parameters modal
   const [showRegenModal, setShowRegenModal] = useState(false);
   const [modalGoal, setModalGoal] = useState("Full Stack Engineer Transition");
   const [modalExperience, setModalExperience] = useState("Intermediate");
   const [modalTimeline, setModalTimeline] = useState("6 Months");
 
-  // Mock Roadmap Steps template
-  const defaultSteps: RoadmapStep[] = [
-    { id: "1", title: "Two Pointers & Sliding Window", description: "Master linear data structure traversal patterns on dual pointers.", type: "dsa", status: "completed" },
-    { id: "2", title: "Build a Real-time Chat App", description: "Apply WebSocket knowledge using Node.js/Socket.io service endpoints.", type: "project", status: "current" },
-    { id: "3", title: "System Design: Load Balancing", description: "Understand layer 4 and layer 7 load balancing to scale servers horizontally.", type: "skill", status: "locked" },
-    { id: "4", title: "Dynamic Programming Foundations", description: "Your Solve Insights show DP optimization pattern challenges as a gap. Focus here.", type: "dsa", status: "locked" },
-  ];
+  const fetchLatestRoadmap = async () => {
+    try {
+      const res = await api.get<ApiResponse<RoadmapResponse>>("/career/latest");
+      if (res.data.data) {
+        const payload = res.data.data;
+        setProfileData(payload.user);
+        setCareerPlan(payload.careerPlan);
+        setSteps(payload.steps);
+        if (payload.recommendationData) {
+          setRecData(payload.recommendationData);
+        }
 
-  // roadmap.sh interactive tree categories
-  const roadmapCategories = [
-    {
-      title: "Frontend Mastery",
-      nodes: [
-        { id: "js-core", name: "JavaScript Advanced", desc: "Closures, Event Loop, call stack runtime" },
-        { id: "react-adv", name: "React Optimizations", desc: "Reconciliation engine, dynamic memo tuning" },
-        { id: "ts-setup", name: "TypeScript Strictness", desc: "Strict Types, complex type interfaces" },
-      ]
-    },
-    {
-      title: "Backend foundations",
-      nodes: [
-        { id: "node-rest", name: "Node.js REST APIs", desc: "Express, robust middleware validation layers" },
-        { id: "api-sec", name: "Auth & API Security", desc: "JWTs, CORS policies, injection protection" },
-      ]
-    },
-    {
-      title: "Database Performance",
-      nodes: [
-        { id: "postgres-opt", name: "PostgreSQL & Indexes", desc: "Drives relational tables under EXPLAIN plans" },
-        { id: "redis-cache", name: "Redis Cache Clusters", desc: "Eviction rules, TTLs, and cache invalidation" },
-      ]
-    },
-    {
-      title: "System Scaling",
-      nodes: [
-        { id: "load-bal", name: "Load Balancing HLD", desc: "Reverse Proxy configurations, routing criteria" },
-        { id: "sys-scale", name: "Architectural Scale", desc: "Sharding indexes and asynchronous messaging" },
-      ]
+        // Auto-select the first in-progress or available step if user clicks workspace and is onboarded
+        if (payload.steps.length > 0 && !activeStep && payload.recommendationData?.isOnboarded) {
+          const inProgress = payload.steps.find(s => s.status === "IN_PROGRESS") || payload.steps[0];
+          fetchStepDetails(inProgress);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch custom career platform pathway", err);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
   useEffect(() => {
-    const fetchLatestAndStatuses = async () => {
-      try {
-        const res = await api.get<ApiResponse<Roadmap>>("/career/latest");
-        if (res.data.data) {
-          setRoadmap(res.data.data);
-        }
-      } catch (err) {
-        console.error("Failed to fetch roadmap", err);
-      } finally {
-        setLoading(false);
-      }
-
-      // Initialize roadmap tree statuses from localStorage
-      const savedStatuses: Record<string, "todo" | "progress" | "completed"> = {};
-      roadmapCategories.forEach(cat => {
-        cat.nodes.forEach(node => {
-          const val = localStorage.getItem(`roadmap_node_status_${node.id}`) || "todo";
-          savedStatuses[node.id] = val as "todo" | "progress" | "completed";
-        });
-      });
-      setNodeStatuses(savedStatuses);
-    };
-    fetchLatestAndStatuses();
+    fetchLatestRoadmap();
   }, []);
+
+  // ESC Listener to close active workspace
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setActiveStep(null);
+        setStepDetails(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  const fetchStepDetails = async (step: RoadmapStep) => {
+    setActiveStep(step);
+    setLoadingDetails(true);
+    setActiveTab("guide");
+    setExpandedQuestions({});
+    try {
+      const res = await api.get<ApiResponse<StepDetails>>(`/career/step-details?stepId=${step.id}`);
+      if (res.data.data) {
+        setStepDetails(res.data.data);
+      }
+    } catch (err) {
+      toast.error("Failed to load step details.");
+      console.error(err);
+    } finally {
+      setLoadingDetails(false);
+    }
+  };
+
+  const handleRegenerateStep = async () => {
+    if (!activeStep) return;
+    setLoadingDetails(true);
+    try {
+      const res = await api.post<ApiResponse<StepDetails>>("/career/study-guide/regenerate", {
+        stepId: activeStep.id
+      });
+      if (res.data.data) {
+        setStepDetails(res.data.data);
+        toast.success("AI rebuilt study workspace guidance!");
+      }
+    } catch (err) {
+      toast.error("Failed to regenerate step workspace.");
+      console.error(err);
+    } finally {
+      setLoadingDetails(false);
+    }
+  };
 
   const handleGenerate = async () => {
     setGenerating(true);
     try {
-      const res = await api.post<ApiResponse<Roadmap>>("/career/roadmap", {
-        goal: modalGoal,
-        experience: modalExperience,
-        timeline: modalTimeline
+      const res = await api.post<ApiResponse<{ plan: CareerPlan | null; steps: RoadmapStep[] }>>("/career/onboarding", {
+        role: user?.role || "Developer",
+        target_domain: modalGoal,
+        answers: {
+          experience: modalExperience,
+          timeline: modalTimeline,
+          dream_company: "Atlassian"
+        }
       });
-      setRoadmap(res.data.data);
-      
-      // Apply some randomized changes to the tree nodes to simulate updating path milestones
-      const updated: Record<string, "todo" | "progress" | "completed"> = {};
-      roadmapCategories.forEach(cat => {
-        cat.nodes.forEach(node => {
-          const rand = Math.random();
-          const nextVal = rand > 0.65 ? "completed" : rand > 0.3 ? "progress" : "todo";
-          updated[node.id] = nextVal;
-          localStorage.setItem(`roadmap_node_status_${node.id}`, nextVal);
-        });
-      });
-      setNodeStatuses(updated);
-      setShowRegenModal(false);
-      toast.success("AI generated your custom transition pathway!");
+      if (res.data.success) {
+        toast.success("AI generated your custom transition pathway!");
+        setShowRegenModal(false);
+        fetchLatestRoadmap();
+      }
     } catch (err) {
-      toast.error("Failed to generate roadmap.");
+      toast.error("Failed to generate career path.");
+      console.error(err);
     } finally {
       setGenerating(false);
     }
   };
 
-  const toggleNodeStatus = (nodeId: string) => {
-    const current = nodeStatuses[nodeId] || "todo";
-    let next: "todo" | "progress" | "completed" = "todo";
-    if (current === "todo") next = "progress";
-    else if (current === "progress") next = "completed";
-    else if (current === "completed") next = "todo";
-    
-    const updated = { ...nodeStatuses, [nodeId]: next };
-    setNodeStatuses(updated);
-    localStorage.setItem(`roadmap_node_status_${nodeId}`, next);
-    toast.success(`Marked step as ${next.toUpperCase()}`);
+  // Toggle tasks checkmarks (stubbed for current page structure, unchanged behavior)
+  const toggleProjectTask = async (projectTitle: string, taskId: string, currentStatus: boolean) => {
+    if (!activeStep || !stepDetails) return;
+    const updatedProjects = stepDetails.projects.map(proj => {
+      if (proj.title === projectTitle) {
+        return {
+          ...proj,
+          tasks: proj.tasks.map(t => t.id === taskId ? { ...t, completed: !currentStatus } : t)
+        };
+      }
+      return proj;
+    });
+    setStepDetails({ ...stepDetails, projects: updatedProjects });
+
+    try {
+      await api.post("/career/progress/project-task", {
+        stepId: activeStep.id,
+        projectTitle,
+        taskId,
+        completed: !currentStatus
+      });
+    } catch (err) {
+      console.error("Failed to save project task completion status to db", err);
+      fetchStepDetails(activeStep);
+    }
   };
 
-  const generateAiStudyGuide = (stepTitle: string) => {
-    setAiReportGenerating(true);
-    setTimeout(() => {
-      setAiReportContent(`### 📚 Study Guide: ${stepTitle}
-Detailed learning materials compiled for your target career goals.
+  const toggleRevisionItem = async (title: string, currentStatus: boolean) => {
+    if (!activeStep || !stepDetails) return;
+    const updatedChecklist = stepDetails.revisionChecklist.map(item => 
+      item.title === title ? { ...item, completed: !currentStatus } : item
+    );
+    setStepDetails({ ...stepDetails, revisionChecklist: updatedChecklist });
 
-#### 1. Core Focus Areas:
-* **Deep Mastery**: Architect backend constraints with production ready practices.
-* **Concepts**: Learn CPU threads, thread safety locks, indexing paradigms, and memory allocation constraints.
-* **Efficiency**: Optimize algorithm complexity benchmarks to maintain <100ms request times.
-
-#### 2. Key Interview Focus Keys:
-* Explain scaling limitations under concurrent WebSocket requests.
-* Describe indexing search optimizations of composite indexes on PostgreSQL.
-* Propose trade-offs of using write-through vs cache-aside eviction strategies.
-
-#### 3. Recommended Platforms:
-* [roadmap.sh Guides & Roadmaps](https://roadmap.sh)
-* [MDN Web Guides (JS/React)](https://developer.mozilla.org)
-* [System Design Primer (donnemartin)](https://github.com/donnemartin/system-design-primer)
-`);
-      setAiReportGenerating(false);
-      toast.success("AI study guide report generated!");
-    }, 1000);
-  };
-
-  const generateTransitionProject = () => {
-    setGeneratingProject(true);
-    setTimeout(() => {
-      setProjectPlan(`### 🛠️ AI Project: Real-time Developer Analytics Service
-
-Build a live developer metric dashboard to demonstrate frontend and backend capability integrations.
-
-#### Tech Stacks:
-* **UI**: Next.js 16, TypeScript, Recharts elements
-* **Backend**: Node.js, Express APIs, Socket.io PubSub
-* **Db / Cache**: PostgreSQL (Supabase), Redis in-memory storage
-
-#### Phase Milestones:
-1. **Phase 1**: Pipeline creation to capture performance timelines and socket messages.
-2. **Phase 2**: Relational schema table creation and composite index explain plan evaluations.
-3. **Phase 3**: Redis cache query integrations matching target latency constraints.
-`);
-      setGeneratingProject(false);
-      toast.success("Custom project blueprint loaded!");
-    }, 1200);
+    try {
+      await api.post("/career/progress/revision-task", {
+        stepId: activeStep.id,
+        title,
+        completed: !currentStatus
+      });
+    } catch (err) {
+      console.error("Failed to save revision completion status to db", err);
+      fetchStepDetails(activeStep); 
+    }
   };
 
   const renderFormattedText = (text: string) => {
@@ -227,27 +300,60 @@ Build a live developer metric dashboard to demonstrate frontend and backend capa
     return text.split("\n").map((line, idx) => {
       let formatted = line;
       formatted = formatted.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
-      formatted = formatted.replace(/`(.*?)`/g, "<code class='px-1.5 py-0.5 bg-zinc-900 rounded font-mono text-xs text-primary'>$1</code>");
+      formatted = formatted.replace(/`(.*?)`/g, "<code class='px-1.5 py-0.5 bg-muted border border-border rounded font-mono text-[10px] text-primary'>$1</code>");
 
       if (formatted.startsWith("### ")) {
-        return <h3 key={idx} className="text-sm font-bold my-2 text-white border-b border-white/5 pb-1" dangerouslySetInnerHTML={{ __html: formatted.slice(4) }} />;
+        return <h3 key={idx} className="text-[13px] font-bold my-3 text-foreground border-b border-border pb-1 font-sans" dangerouslySetInnerHTML={{ __html: formatted.slice(4) }} />;
       }
       if (formatted.startsWith("#### ")) {
-        return <h4 key={idx} className="text-[10px] font-bold my-2 text-primary uppercase tracking-widest" dangerouslySetInnerHTML={{ __html: formatted.slice(5) }} />;
+        return <h4 key={idx} className="text-[10px] font-bold my-2 text-primary uppercase tracking-widest font-sans" dangerouslySetInnerHTML={{ __html: formatted.slice(5) }} />;
       }
       if (formatted.trim().startsWith("* ") || formatted.trim().startsWith("- ")) {
-        return <li key={idx} className="ml-3 list-disc text-xs text-zinc-400 my-1" dangerouslySetInnerHTML={{ __html: formatted.trim().slice(2) }} />;
+        return <li key={idx} className="ml-3 list-disc text-xs text-muted-foreground my-1 font-sans leading-relaxed" dangerouslySetInnerHTML={{ __html: formatted.trim().slice(2) }} />;
       }
-      return <p key={idx} className="text-xs text-zinc-405 text-zinc-400 leading-relaxed my-1" dangerouslySetInnerHTML={{ __html: formatted }} />;
+      return <p key={idx} className="text-xs text-muted-foreground leading-relaxed my-1 font-sans" dangerouslySetInnerHTML={{ __html: formatted }} />;
     });
   };
+
+  const targetTimeline = careerPlan?.estimated_timeline || "3 Months";
 
   if (loading) return (
     <div className="h-screen w-full flex flex-col items-center justify-center bg-background text-foreground">
       <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
-      <p className="text-xs font-bold uppercase tracking-widest text-zinc-500">Syncing your timeline...</p>
+      <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Syncing your timeline...</p>
     </div>
   );
+
+  // If onboarding is incomplete, display appropriate empty state
+  if (recData && !recData.isOnboarded) {
+    return (
+      <div className="flex-1 bg-background text-foreground flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] p-6">
+        <div className="max-w-md w-full bg-card border border-border rounded-3xl p-8 text-center space-y-6 shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 blur-[50px] -z-10" />
+          
+          <div className="h-16 w-16 bg-primary/10 rounded-full flex items-center justify-center text-primary mx-auto border border-primary/20 shadow-md">
+            <Compass size={32} className="animate-pulse" />
+          </div>
+
+          <div className="space-y-2">
+            <h2 className="text-xl font-bold tracking-tight">Complete Career Profile</h2>
+            <p className="text-muted-foreground text-xs leading-relaxed">
+              Unlock personalized learning track recommendations dynamically aligned with your target goals, dream company, and timeline. Please click below to generate your initial path.
+            </p>
+          </div>
+
+          <div className="pt-2">
+            <Button
+              onClick={() => setShowRegenModal(true)}
+              className="w-full h-11 bg-primary text-primary-foreground hover:bg-primary/95 text-xs font-extrabold uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-primary/25"
+            >
+              Start Onboarding Questionnaire
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const heroActions = (
     <Button 
@@ -255,360 +361,521 @@ Build a live developer metric dashboard to demonstrate frontend and backend capa
       onClick={() => setShowRegenModal(true)}
     >
       <Sparkles className="h-4 w-4" />
-      Regenerate Path
+      Customize Path
     </Button>
   );
 
-  const stepsList = roadmap?.content.steps || defaultSteps;
-
   return (
-    <div className="flex-1 overflow-y-auto bg-background text-foreground">
-      <div className="max-w-7xl mx-auto px-8 py-10 space-y-12">
+    <div className="relative flex-1 overflow-hidden h-[calc(100vh-64px)] flex flex-col bg-background text-foreground animate-in fade-in duration-300">
+      <div className="flex-1 overflow-y-auto px-8 py-10 space-y-12 w-full max-w-7xl mx-auto pb-24">
          
-         {/* Hero Block */}
+         {/* Personalized Dynamic Header Block */}
          <BaseHero 
-           badgeText="CAREER COPILOT ACTIVE"
-           title="Your Developer"
-           highlight="Transition Path"
+           badgeText="CAREER OPERATING SYSTEM ACTIVE"
+           title={profileData?.target_domain || "Software Specialist"}
+           highlight="Pathway"
            description={
-             user?.role === "Working Professional"
-               ? `Accelerating career goals targeting ${user?.target_domain || "Full Stack Engineering"} as an experienced developer.`
-               : `Bootstrapping software career goals targeting ${user?.target_domain || "Full Stack Engineering"} as a fresher.`
+             careerPlan?.summary || 
+             `Accelerating transition towards target software domains with custom technical roadmaps curated by AI.`
            }
            actions={heroActions}
          />
 
-         {/* Resume Skills Dashboard */}
-         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="bg-card/45 dark:bg-zinc-950/40 border-zinc-200 dark:border-white/5 rounded-3xl p-6">
-               <h3 className="text-xs font-bold text-emerald-450 uppercase tracking-widest mb-4 flex items-center gap-2">
-                  <CheckCircle2 size={16} /> Skills You Have ({user?.role || "Developer"} Base)
-               </h3>
-               <div className="flex flex-wrap gap-2">
-                  {(user?.role === "Working Professional"
-                    ? ["TypeScript", "JavaScript (ES6+)", "Git & GitHub", "API Integration", "Basic SQL", "Agile Methodologies"]
-                    : ["Core Programming", "Basic HTML/CSS", "Data Structures", "Algorithms Basics", "Simple SQL", "Academic Projects"]
-                  ).map((s) => (
-                    <Badge key={s} className="bg-emerald-500/10 text-emerald-440 border-none px-3 py-1.5 text-xs font-medium rounded-xl text-emerald-450 hover:bg-emerald-500/15">
-                       {s}
-                    </Badge>
-                  ))}
-               </div>
-               <p className="text-[10px] text-zinc-500 mt-4 leading-relaxed font-mono">
-                  Analysis: Solid starting blocks. Matching core credentials against target patterns.
-               </p>
+         {/* Premium Header Statistics Indicators (4-Column Layout without core progress counts) */}
+         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            <Card className="bg-card/40 border border-border rounded-2xl p-4 flex flex-col justify-between">
+              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                <Briefcase size={12} className="text-primary" /> Current Role
+              </span>
+              <p className="text-xs font-extrabold text-foreground mt-1 capitalize truncate">
+                {profileData?.role || user?.role || "Not Set"}
+              </p>
             </Card>
 
-            <Card className="bg-card/45 dark:bg-zinc-950/40 border-zinc-200 dark:border-white/5 rounded-3xl p-6">
-               <h3 className="text-xs font-bold text-amber-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                  <Zap size={16} /> Skills Needed for {user?.target_domain || "Full Stack"} Transition
-               </h3>
-               <div className="flex flex-wrap gap-2">
-                  {(user?.target_domain === "Backend"
-                    ? ["Node.js / Express", "PostgreSQL DB", "Redis Caching", "REST / GraphQL", "Docker Containers", "System Design HLD"]
-                    : user?.target_domain === "Frontend"
-                    ? ["React.js", "TypeScript", "TailwindCSS", "Next.js UI", "Zustand State", "Webpack/Vite"]
-                    : user?.target_domain === "DevOps"
-                    ? ["CI/CD Pipelines", "Docker", "Kubernetes", "AWS / Cloud", "Terraform IaC", "Prometheus/Grafana"]
-                    : user?.target_domain === "Data Science"
-                    ? ["Python / Pandas", "Jupyter Notebooks", "NumPy & SciPy", "Scikit Learn Models", "SQL Databases", "PyTorch / ML"]
-                    : user?.target_domain === "Mobile UI"
-                    ? ["React Native", "Swift / SwiftUI", "Kotlin / Compose", "App Store Release", "Webpack/Babel", "TailwindCSS"]
-                    : ["React.js", "TypeScript", "Node.js / REST", "PostgreSQL / DB", "Redis Caching", "Docker Pipelines"]
-                  ).map((s) => (
-                    <Badge key={s} className="bg-amber-500/10 text-amber-440 border-none px-3 py-1.5 text-xs font-medium rounded-xl text-amber-500 hover:bg-amber-500/15">
-                       {s}
-                    </Badge>
-                  ))}
-               </div>
-               <p className="text-[10px] text-zinc-500 mt-4 leading-relaxed font-mono">
-                  Advice: Deepen competency around these subjects to maximize screening success rates.
-               </p>
+            <Card className="bg-card/40 border border-border rounded-2xl p-4 flex flex-col justify-between">
+              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                <Target size={12} className="text-amber-500" /> Target Role
+              </span>
+              <p className="text-xs font-extrabold text-foreground mt-1 truncate">
+                {recData?.targetRole || profileData?.target_domain || "Not Set"}
+              </p>
+            </Card>
+
+            <Card className="bg-card/40 border border-border rounded-2xl p-4 flex flex-col justify-between">
+              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                <Compass size={12} className="text-emerald-500" /> Dream Company
+              </span>
+              <p className="text-xs font-extrabold text-foreground mt-1 truncate">
+                {recData?.dreamCompany || "Not Set"}
+              </p>
+            </Card>
+
+            <Card className="bg-card/40 border border-border rounded-2xl p-4 flex flex-col justify-between">
+              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                <Clock size={12} className="text-blue-500" /> Est. Timeline
+              </span>
+              <p className="text-xs font-extrabold text-foreground mt-1">
+                {targetTimeline}
+              </p>
             </Card>
          </div>
 
-         {/* Interactive roadmap.sh style visual tree section */}
-         <div className="space-y-6">
-            <div>
-               <h2 className="text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-2">
-                  <GraduationCap size={20} className="text-primary" />
-                  Full Stack Developer Transition Roadmap
+         {/* Dynamic Learning Track Recommendations Cards Section */}
+         {recData && recData.recommendations && recData.recommendations.length > 0 && (
+           <div className="space-y-4">
+             <div className="space-y-1">
+               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest bg-primary/10 border border-primary/20 text-primary">
+                 <Sparkles size={11} className="text-primary" />
+                 Personalized Learning Tracks
+               </span>
+               <h2 className="text-sm font-extrabold text-foreground uppercase tracking-widest leading-relaxed pt-1.5">
+                 To become a <span className="text-primary font-black lowercase">{recData.targetRole}</span> at <span className="text-amber-400 font-black">{recData.dreamCompany}</span>, complete these learning tracks:
                </h2>
-               <p className="text-xs text-zinc-500 mt-1">
-                  Interactive roadmap.sh inspired progression. Click any node to cycle state: To Do ➔ In Progress ➔ Completed.
-               </p>
-            </div>
+             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-               {roadmapCategories.map((cat, i) => (
-                  <div key={i} className="space-y-4 p-5 rounded-3xl bg-card/45 dark:bg-zinc-950/40 border border-zinc-200 dark:border-white/5 relative overflow-hidden group">
-                     <div>
-                        <span className="text-[10px] text-primary/70 font-extrabold uppercase tracking-[0.2em]">Step {i + 1}</span>
-                        <h3 className="text-sm font-bold text-zinc-900 dark:text-white tracking-wide mt-0.5">{cat.title}</h3>
-                     </div>
-                     
-                     <div className="space-y-3 relative">
-                        {/* Connecting visual tree wire */}
-                        <div className="absolute left-[13px] top-4 bottom-4 w-0.5 bg-zinc-200 dark:bg-zinc-900 border-l border-dashed border-zinc-300 dark:border-white/5 pr-px" />
-                        
-                        {cat.nodes.map((node) => {
-                           const status = nodeStatuses[node.id] || "todo";
-                           return (
-                              <div 
-                                key={node.id} 
-                                onClick={() => toggleNodeStatus(node.id)}
-                                className={cn(
-                                  "relative py-3 pr-3 pl-8 rounded-xl border transition-all cursor-pointer select-none",
-                                  status === "completed" ? "bg-emerald-500/5 border-emerald-500/20 hover:border-emerald-500/40" :
-                                  status === "progress" ? "bg-amber-500/5 border-amber-500/20 hover:border-amber-500/40 animate-pulse" :
-                                  "bg-zinc-150/40 dark:bg-zinc-900/10 border-zinc-200 dark:border-white/5 hover:border-zinc-300 dark:hover:border-zinc-805"
-                                )}
-                              >
-                                 {/* Status marker bullet */}
-                                 <div className={cn(
-                                   "absolute left-[9px] top-[15px] h-2.5 w-2.5 rounded-full border flex items-center justify-center transition-all",
-                                   status === "completed" ? "bg-emerald-505 bg-emerald-500 border-emerald-500 scale-110" :
-                                   status === "progress" ? "bg-amber-500 border-amber-500" :
-                                   "bg-zinc-250 dark:bg-zinc-800 border-zinc-350 dark:border-zinc-700"
-                                 )} />
-                                 
-                                 <p className={cn(
-                                   "text-[11px] font-bold transition-colors",
-                                   status === "completed" ? "text-emerald-450" :
-                                   status === "progress" ? "text-amber-500" :
-                                   "text-zinc-805 dark:text-white"
-                                 )}>
-                                    {node.name}
-                                 </p>
-                                 <p className="text-[9px] text-zinc-500 mt-0.5 leading-snug">{node.desc}</p>
-                              </div>
-                           )
-                        })}
-                     </div>
-                  </div>
-               ))}
-            </div>
-         </div>
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+               {recData.recommendations.map((track) => {
+                 let statusBadgeClass = "bg-muted border-border text-muted-foreground";
+                 if (track.status === "Active") {
+                   statusBadgeClass = "bg-blue-500/10 border-blue-500/20 text-blue-600 dark:text-blue-400";
+                 } else if (track.status === "Completed") {
+                   statusBadgeClass = "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400";
+                 }
 
-         {/* Timeline & Analytics Split Grid */}
-         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-            {/* Roadmap Timeline */}
-            <div className="lg:col-span-2 space-y-6">
-               <h2 className="text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-2">
-                  <MapIcon size={18} className="text-primary" />
-                  Target Timeline & Milestones
-               </h2>
+                 return (
+                   <div
+                     key={track.id}
+                     onClick={() => router.push(`/learn/${track.slug}`)}
+                     className="group cursor-pointer rounded-2xl border border-border bg-card/40 p-5 flex flex-col justify-between hover:border-primary/20 hover:bg-muted/40 shadow-xl transition-all duration-300 relative overflow-hidden"
+                   >
+                     <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 blur-[35px] -z-10 group-hover:bg-primary/10 transition-colors" />
 
-               <div className="relative">
-                  {stepsList.map((step, idx) => (
-                    <TimelineNode 
-                      key={step.id}
-                      title={step.title}
-                      description={step.description}
-                      status={step.status}
-                      type={step.type}
-                      isLast={idx === stepsList.length - 1}
-                      onClick={() => setSelectedTimelineStep(step)}
-                    />
-                  ))}
-               </div>
-            </div>
-
-            {/* Side Analytics & Projects */}
-            <div className="space-y-8">
-               <Card className="bg-card/45 dark:bg-zinc-950/40 border-zinc-200 dark:border-white/5 rounded-3xl overflow-hidden">
-                  <CardHeader className="bg-primary/5 border-b border-primary/10">
-                     <CardTitle className="text-primary flex items-center gap-2 text-xs uppercase tracking-widest font-extrabold">
-                        <BrainCircuit size={16} /> 
-                        Gap Analysis & Key Factors
-                     </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-6 space-y-6">
-                     <ClientOnly>
-                       <div className="space-y-4">
-                          <p className="text-xs text-zinc-400 leading-relaxed font-semibold">
-                             Based on resume matching metrics, verify accuracy ratings:
-                          </p>
-                          <div className="grid grid-cols-1 gap-4">
-                             {[
-                               { label: "Backend REST core architecture", score: 35, factor: "Middleware routers, response models" },
-                               { label: "Database Scans & Indexes", score: 48, factor: "Explain plans, select optimization query patterns" },
-                               { label: "System Design Load Balancer", score: 25, factor: "L4 vs L7 proxied traffic split routes" },
-                               { label: "DSA Backtracking algorithms", score: 62, factor: "DFS graph traversal recursion limits" }
-                             ].map((gap) => (
-                               <div key={gap.label} className="space-y-1.5 p-3 rounded-xl bg-zinc-100/50 dark:bg-zinc-900/10 border-zinc-200 dark:border-white/5">
-                                  <div className="flex justify-between text-[9px] font-bold text-zinc-400 uppercase">
-                                     <span>{gap.label}</span>
-                                     <span className="text-amber-500 font-mono mt-0.5">{gap.score}% Accuracy</span>
-                                  </div>
-                                  <div className="h-1.5 w-full bg-zinc-900 rounded-full overflow-hidden">
-                                     <div className="h-full bg-gradient-to-r from-amber-600 to-amber-500 rounded-full" style={{ width: `${gap.score}%` }} />
-                                  </div>
-                                  <p className="text-[9px] text-zinc-500 italic font-mono">Key Factor: {gap.factor}</p>
-                               </div>
-                             ))}
-                          </div>
-                       </div>
-                     </ClientOnly>
-                  </CardContent>
-               </Card>
-
-               {/* AI Capstone Project Builder */}
-               <Card className="bg-card/45 dark:bg-zinc-950/40 border-zinc-200 dark:border-white/5 rounded-3xl p-6 relative group overflow-hidden border-none shadow-2xl">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 blur-[60px] -z-10 group-hover:bg-primary/20 transition-all" />
-                  
-                  <div className="flex items-center gap-3.5 mb-4">
-                     <div className="h-12 w-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-xl">
-                        <Code size={24} />
-                     </div>
-                     <div>
-                       <h3 className="font-bold text-zinc-900 dark:text-white uppercase tracking-wider text-xs">AI Project Playground</h3>
-                       <p className="text-[9px] text-zinc-500">Target custom Full-Stack project roadmap guides.</p>
-                     </div>
-                  </div>
-
-                  {projectPlan ? (
-                     <div className="space-y-4 bg-zinc-100/80 dark:bg-zinc-950/60 p-4 rounded-2xl border border-zinc-200 dark:border-white/5 max-h-[320px] overflow-y-auto select-text text-zinc-800 dark:text-zinc-300">
-                        {renderFormattedText(projectPlan)}
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          className="w-full text-[10px] font-bold uppercase tracking-wider border-white/10 text-zinc-450 hover:text-white"
-                          onClick={() => setProjectPlan(null)}
-                        >
-                           Custom New Project Options
-                        </Button>
-                     </div>
-                  ) : (
                      <div className="space-y-3">
-                        <p className="text-xs text-zinc-500 leading-normal">
-                           Get custom architectural blueprints to prove skill transitions.
-                        </p>
-                        <Button 
-                          className="w-full h-11 bg-primary text-primary-foreground font-bold rounded-xl shadow-lg hover:opacity-95 text-xs uppercase tracking-widest font-sans"
-                          onClick={generateTransitionProject}
-                          disabled={generatingProject}
-                        >
-                           {generatingProject ? (
-                              <Loader2 className="animate-spin mr-2 h-4 w-4" />
-                           ) : (
-                              <Sparkles className="mr-2 h-4 w-4" />
-                           )}
-                           Build Transition Project
-                        </Button>
-                     </div>
-                  )}
-               </Card>
+                       <div className="flex justify-between items-center">
+                         <span className={`text-[9px] font-extrabold uppercase tracking-widest px-2 py-0.5 rounded-full border ${statusBadgeClass}`}>
+                           {track.status}
+                         </span>
+                         <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
+                           {track.estimated_hours} Hours
+                         </span>
+                       </div>
 
-               <Card className="bg-card/90 dark:bg-zinc-950 border border-zinc-200 dark:border-white/5 rounded-3xl p-6 relative group overflow-hidden shadow-2xl">
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent -z-10" />
-                  <div className="flex flex-col items-center text-center space-y-4">
-                     <div className="h-14 w-14 rounded-2xl bg-zinc-900 border border-white/5 flex items-center justify-center text-primary shadow-xl">
-                        <Target size={28} />
+                       <div className="space-y-1">
+                         <h4 className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">
+                           {track.title}
+                         </h4>
+                         <p className="text-[10px] text-muted-foreground leading-normal font-sans mt-2">
+                           {track.whyExplanation}
+                         </p>
+                       </div>
                      </div>
-                     <div className="space-y-1">
-                        <h3 className="font-bold text-zinc-900 dark:text-white uppercase tracking-widest text-xs">Next Milestone</h3>
-                        <p className="text-[11px] text-zinc-500">Solve 3 Medium problems in &quot;Graphs&quot; to unlock the Junior Architect certificate.</p>
+
+                     <div className="pt-3 mt-4 border-t border-border flex items-center justify-between text-primary font-mono text-[9px] font-bold uppercase tracking-widest">
+                       <span>Go to Track workspace</span>
+                       <ChevronRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
+                     </div>
+                   </div>
+                 );
+               })}
+             </div>
+           </div>
+         )}
+
+         {/* Timeline & Active Workspace Panel layout */}
+         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            {/* Left Roadmap Milestones list */}
+            <div className="lg:col-span-1 space-y-6">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                     <MapIcon size={14} className="text-primary" />
+                     Milestone Pathway
+                  </h2>
+                </div>
+
+                <div className="relative pl-1">
+                  {steps.map((step, idx) => {
+                    const isActive = activeStep?.id === step.id;
+                    return (
+                      <div key={step.id} className="relative group/node select-none">
+                        <TimelineNode 
+                          title={step.title}
+                          description={`${step.duration || 4} hours • ${step.description}`}
+                          status={
+                            step.status === "COMPLETED" ? "completed" :
+                            step.status === "IN_PROGRESS" ? "current" : "locked"
+                          }
+                          type={step.type}
+                          isLast={idx === steps.length - 1}
+                          hasGuide={true} // Display indicator to let them know workspace loads this step
+                          onClick={() => fetchStepDetails(step)}
+                        />
+                        {/* Interactive glow border on active selected step */}
+                        {isActive && (
+                          <div className="absolute left-[34px] inset-y-0 right-0 border-l-[3px] border-primary pointer-events-none rounded-l" />
+                        )}
                       </div>
-                      <Button 
-                        onClick={() => window.location.href = "/problems"}
-                        className="w-full h-11 bg-primary text-primary-foreground font-bold rounded-xl shadow-lg hover:opacity-90 transition-all font-sans text-xs uppercase tracking-widest"
+                    );
+                  })}
+
+                  {steps.length === 0 && (
+                    <div className="text-center py-10 bg-muted/10 border border-dashed border-border rounded-2xl p-6">
+                      <Compass className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                      <p className="text-xs text-muted-foreground">No onboarding milestones found. Run transition custom onboarding form.</p>
+                    </div>
+                  )}
+                </div>
+            </div>
+
+            {/* Right Tabbed Workspace Widget */}
+            <div className="lg:col-span-2">
+               {activeStep ? (
+                  <Card className="bg-card border border-border rounded-3xl p-6 relative group overflow-hidden shadow-2xl flex flex-col h-[750px]">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 blur-[60px] -z-10 group-hover:bg-primary/20 transition-all" />
+                    
+                    {/* Workspace Header */}
+                    <div className="flex items-start justify-between border-b border-border pb-4 shrink-0">
+                       <div>
+                          <Badge variant="outline" className="text-primary border-primary/25 bg-primary/10 mb-1.5 uppercase font-bold tracking-widest text-[9px] font-mono">
+                             Milestone {steps.indexOf(activeStep) + 1} • {activeStep.type}
+                          </Badge>
+                          <h3 className="text-base font-extrabold text-foreground leading-tight">{activeStep.title}</h3>
+                       </div>
+                       
+                       <div className="flex items-center gap-1.5 shrink-0">
+                         <Button 
+                           variant="ghost" 
+                           size="sm" 
+                           onClick={handleRegenerateStep}
+                           disabled={loadingDetails}
+                           className="h-8 px-2.5 gap-1.5 text-[10px] font-bold uppercase tracking-wider bg-muted border border-border hover:border-primary/20 text-foreground hover:bg-muted/80"
+                         >
+                            {loadingDetails ? (
+                               <Loader2 size={10} className="animate-spin" />
+                            ) : (
+                               <Sparkles size={10} />
+                            )}
+                            Re-generate Workspace
+                         </Button>
+                         <Button 
+                           variant="ghost" 
+                           size="icon" 
+                           className="h-8 w-8 rounded-full bg-muted border border-border text-foreground hover:bg-muted/80 cursor-pointer"
+                           onClick={() => {
+                             setActiveStep(null);
+                             setStepDetails(null);
+                           }}
+                         >
+                            <X size={14} />
+                         </Button>
+                       </div>
+                    </div>
+
+                    {/* Tabs Options Navigation Bar */}
+                    <div className="flex items-center gap-1 mt-4 border-b border-border pb-2 shrink-0 overflow-x-auto text-[10px] font-bold uppercase tracking-wider font-mono">
+                       {[
+                         { id: "guide", label: "Study Guide", icon: BookOpen },
+                         { id: "resources", label: "Resources", icon: LinkIconWrapper },
+                         { id: "projects", label: "Practice Projects", icon: Code },
+                         { id: "interview", label: "Interview Prep", icon: HelpCircle },
+                         { id: "revision", label: "Revision List", icon: CheckSquare }
+                       ].map(t => {
+                         const TabIcon = t.icon;
+                         const isCurrent = activeTab === t.id;
+                         return (
+                           <button
+                             key={t.id}
+                             onClick={() => setActiveTab(t.id as "guide" | "resources" | "projects" | "interview" | "revision")}
+                             className={cn(
+                               "h-8 px-3.5 rounded-lg flex items-center gap-2 border transition-all truncate hover:text-foreground",
+                               isCurrent 
+                                 ? "bg-primary/10 text-primary border-primary/25"
+                                 : "border-transparent text-muted-foreground hover:bg-muted/30"
+                             )}
+                           >
+                             <TabIcon size={12} />
+                             {t.label}
+                           </button>
+                         )
+                       })}
+                    </div>
+
+                    {/* Workspace Core Body area */}
+                    <div className="flex-1 overflow-y-auto py-6 pr-1 scrollbar-hide text-foreground/90">
+                      {loadingDetails ? (
+                        <div className="h-full w-full flex flex-col items-center justify-center">
+                          <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Generating milestone coaching assets...</span>
+                        </div>
+                      ) : stepDetails ? (
+                        <div className="space-y-6">
+                           
+                           {/* Guide Tab */}
+                           {activeTab === "guide" && (
+                             <div className="space-y-4 text-xs select-text">
+                               {renderFormattedText(stepDetails.guide?.content || "")}
+                             </div>
+                           )}
+
+                           {/* Resources Tab */}
+                           {activeTab === "resources" && (
+                             <div className="space-y-3">
+                               <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5 font-mono">
+                                  <BookOpen size={12} className="text-primary" />
+                                  Recommended reference URLs ({stepDetails.resources.length})
+                               </h4>
+                               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                  {stepDetails.resources.map((res, index) => (
+                                    <div key={index} className="p-4 rounded-xl bg-muted/40 border border-border hover:border-primary/20 transition-all space-y-2 group">
+                                      <div className="flex items-center justify-between text-[9px] font-extrabold uppercase tracking-wide text-muted-foreground font-mono">
+                                        <span>{res.source || "External Resource"}</span>
+                                        <Badge variant="outline" className="text-primary border-primary/20 bg-primary/5 px-2 py-0">
+                                          Link
+                                        </Badge>
+                                      </div>
+                                      <a 
+                                        href={res.url} 
+                                        target="_blank" 
+                                        rel="noreferrer" 
+                                        className="inline-flex items-center gap-1 font-bold text-xs text-white hover:text-primary transition-colors group-hover:underline"
+                                      >
+                                        {res.title}
+                                        <ExternalLink size={10} className="text-muted-foreground shrink-0" />
+                                      </a>
+                                      <p className="text-[10px] text-muted-foreground/80 leading-relaxed font-sans">{res.reason}</p>
+                                    </div>
+                                  ))}
+                                  {stepDetails.resources.length === 0 && (
+                                    <span className="text-xs text-muted-foreground">No resources generated yet.</span>
+                                  )}
+                                </div>
+                             </div>
+                           )}
+
+                           {/* Projects Tab */}
+                           {activeTab === "projects" && (
+                             <div className="space-y-4">
+                               {stepDetails.projects.map((proj, idx) => (
+                                 <div key={idx} className="p-5 rounded-2xl bg-muted/40 border border-border space-y-3">
+                                   <div className="flex justify-between items-start gap-2">
+                                     <div>
+                                         <h4 className="text-sm font-bold text-foreground tracking-wide">{proj.title}</h4>
+                                         <p className="text-xs text-muted-foreground mt-1">{proj.description}</p>
+                                     </div>
+                                     <div className="flex gap-2 shrink-0">
+                                         <Badge className="bg-primary/10 text-primary border-none rounded">{proj.difficulty}</Badge>
+                                         <Badge className="bg-muted text-foreground border-none rounded">{proj.estimated_time}</Badge>
+                                     </div>
+                                   </div>
+
+                                   {/* Tasks checklist */}
+                                   <div className="space-y-2 pt-3 border-t border-border">
+                                      <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Tasks Blueprint</span>
+                                      <div className="space-y-2">
+                                         {proj.tasks.map((task) => (
+                                           <div 
+                                             key={task.id}
+                                             onClick={() => toggleProjectTask(proj.title, task.id, task.completed)}
+                                             className="flex items-center justify-between p-3 rounded-xl bg-muted/40 border border-border cursor-pointer hover:border-primary/20 transition-all select-none"
+                                           >
+                                             <div className="flex items-center gap-3">
+                                                {task.completed ? (
+                                                  <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />
+                                                ) : (
+                                                  <Circle size={16} className="text-muted-foreground shrink-0" />
+                                                )}
+                                                <span className={cn(
+                                                  "text-xs",
+                                                  task.completed ? "text-muted-foreground line-through" : "text-foreground"
+                                                )}>
+                                                  {task.title}
+                                                </span>
+                                             </div>
+                                             <div className="flex items-center gap-2">
+                                                <span className="text-[9px] font-mono text-muted-foreground">{task.estimatedTime}</span>
+                                                <span className="text-[9px] font-extrabold uppercase text-muted-foreground bg-muted px-1.5 py-0.5 rounded text-[8px] tracking-wide scale-90">{task.difficulty}</span>
+                                             </div>
+                                           </div>
+                                         ))}
+                                      </div>
+                                   </div>
+                                 </div>
+                               ))}
+                               {stepDetails.projects.length === 0 && (
+                                 <span className="text-xs text-muted-foreground">No practice projects recommended.</span>
+                               )}
+                             </div>
+                           )}
+
+                           {/* Interview Prep Tab */}
+                           {activeTab === "interview" && (
+                             <div className="space-y-3.5">
+                                <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2 font-mono">
+                                   <HelpCircle size={12} className="text-primary" />
+                                   Coaching Mock Q&As ({stepDetails.interviewPreps.length})
+                                </h4>
+                                <div className="space-y-3">
+                                  {stepDetails.interviewPreps.map((prep, idx) => {
+                                    const isOpen = !!expandedQuestions[idx];
+                                    return (
+                                      <div key={idx} className="border border-border rounded-2xl overflow-hidden bg-muted/40">
+                                         <div 
+                                           className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/80 select-none transition-all gap-3"
+                                           onClick={() => setExpandedQuestions(p => ({ ...p, [idx]: !isOpen }))}
+                                         >
+                                            <div className="space-y-1">
+                                               <div className="flex gap-2 items-center">
+                                                  <Badge className="bg-primary/10 text-primary text-[8px] py-0 border-none tracking-wider rounded">{prep.difficulty}</Badge>
+                                                  <span className="text-[9px] font-mono text-muted-foreground">{prep.estimated_duration} mins</span>
+                                               </div>
+                                               <p className="text-xs font-bold text-foreground leading-relaxed">{prep.question_text}</p>
+                                            </div>
+                                            <ChevronRight size={14} className={cn("text-muted-foreground transition-transform shrink-0", isOpen && "rotate-90")} />
+                                         </div>
+                                         {isOpen && (
+                                            <div className="p-4 border-t border-border bg-muted/20 text-xs text-muted-foreground space-y-3 font-sans leading-relaxed">
+                                              <p className="font-semibold text-foreground">Expected answer:</p>
+                                              <div className="bg-muted p-3 rounded-lg border border-border font-mono text-[10px] leading-relaxed text-emerald-600 dark:text-emerald-400 overflow-x-auto whitespace-pre-wrap">
+                                                 {prep.expected_answer}
+                                              </div>
+                                              {prep.tags && prep.tags.length > 0 && (
+                                                <div className="flex flex-wrap gap-1.5 mt-2">
+                                                   {prep.tags.map(tag => (
+                                                     <Badge key={tag} className="bg-muted text-muted-foreground text-[8px] px-2 py-0 border border-border">{tag}</Badge>
+                                                   ))}
+                                                </div>
+                                              )}
+                                            </div>
+                                         )}
+                                      </div>
+                                    )
+                                  })}
+                                </div>
+                             </div>
+                           )}
+
+                           {/* Revision Checklists Tab */}
+                           {activeTab === "revision" && (
+                             <div className="space-y-4">
+                                <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5 font-mono">
+                                   <ClipboardList size={12} className="text-primary" />
+                                   Milestone Concept Checks ({stepDetails.revisionChecklist.length})
+                                </h4>
+                                <div className="space-y-2.5">
+                                   {stepDetails.revisionChecklist.map((item, idx) => (
+                                     <div 
+                                       key={idx}
+                                       onClick={() => toggleRevisionItem(item.title, item.completed)}
+                                       className="flex items-center gap-3 p-3.5 rounded-xl bg-muted/40 border border-border cursor-pointer hover:border-primary/20 transition-all select-none"
+                                     >
+                                        {item.completed ? (
+                                           <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />
+                                        ) : (
+                                           <Circle size={16} className="text-muted-foreground shrink-0" />
+                                        )}
+                                        <span className={cn(
+                                          "text-xs leading-normal font-medium",
+                                          item.completed ? "text-muted-foreground line-through" : "text-foreground"
+                                        )}>
+                                           {item.title}
+                                        </span>
+                                     </div>
+                                   ))}
+                                   {stepDetails.revisionChecklist.length === 0 && (
+                                     <span className="text-xs text-muted-foreground">No revision checkpoints recommended.</span>
+                                   )}
+                                </div>
+                             </div>
+                           )}
+
+                        </div>
+                      ) : (
+                        <div className="h-full w-full flex flex-col items-center justify-center text-center">
+                           <Compass className="h-10 w-10 text-muted-foreground mb-2" />
+                           <span className="text-xs text-muted-foreground">No study assets generated. Press regenerating button.</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Workspace Footer */}
+                    <div className="border-t border-zinc-200 dark:border-white/5 pt-4 flex justify-between items-center text-[9px] text-zinc-500 font-mono shrink-0">
+                      <span>Interactive Career Workspace Active</span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 rounded-xl text-[9px] uppercase font-bold text-zinc-400 hover:text-zinc-205 border-zinc-250 dark:border-white/5"
+                        onClick={() => {
+                          setActiveStep(null);
+                          setStepDetails(null);
+                        }}
                       >
-                         Launch Graph Hub
+                        Close Workspace
                       </Button>
+                    </div>
+                  </Card>
+               ) : (
+                  <div className="space-y-6">
+                     <Card className="bg-card border border-border rounded-3xl overflow-hidden p-6 text-center space-y-4">
+                        <div className="h-12 w-12 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary mx-auto">
+                           <Compass size={24} />
+                        </div>
+                        <div className="space-y-1">
+                           <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">Select a Milestone Step</h3>
+                           <p className="text-xs text-zinc-500 leading-relaxed max-w-sm mx-auto">
+                             Click on any of the milestones on the left timeline to generate and open its interactive AI Mentor workspace.
+                           </p>
+                        </div>
+                     </Card>
+
+                     <Card className="bg-card/45 dark:bg-zinc-950/40 border-zinc-200 dark:border-white/5 rounded-3xl overflow-hidden">
+                        <CardHeader className="bg-primary/5 border-b border-primary/10">
+                           <CardTitle className="text-primary flex items-center gap-2 text-xs uppercase tracking-widest font-extrabold">
+                              <BrainCircuit size={16} /> 
+                              Strategic Strengths & Action Plan
+                           </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-6">
+                           <ClientOnly>
+                              <div className="space-y-4">
+                                 <p className="text-xs text-zinc-450 leading-relaxed font-semibold">
+                                    Assess gaps against target domain credentials:
+                                 </p>
+                                 <div className="grid grid-cols-1 gap-4">
+                                    {[
+                                      { label: "Backend Core Architecture API Layer", score: 65, factor: "Routing models, middleware controllers" },
+                                      { label: "PostgreSQL Database Performance tuning", score: 48, factor: "Relational constraints and nested filters" },
+                                      { label: "System Design Load Balancer Scalability", score: 35, factor: "Layer 4 client proxies split routing rules" }
+                                    ].map((gap) => (
+                                      <div key={gap.label} className="space-y-1.5 p-3.5 rounded-xl bg-zinc-100/50 dark:bg-zinc-900/10 border-zinc-200 dark:border-white/5">
+                                         <div className="flex justify-between text-[9px] font-bold text-zinc-400 uppercase">
+                                            <span>{gap.label}</span>
+                                            <span className="text-amber-500 font-mono mt-0.5">{gap.score}% Accuracy</span>
+                                         </div>
+                                         <div className="h-1.5 w-full bg-zinc-900 rounded-full overflow-hidden">
+                                            <div className="h-full bg-gradient-to-r from-amber-600 to-amber-500 rounded-full" style={{ width: `${gap.score}%` }} />
+                                         </div>
+                                         <p className="text-[9px] text-zinc-500 italic font-mono">Competency Focus: {gap.factor}</p>
+                                      </div>
+                                    ))}
+                                 </div>
+                              </div>
+                           </ClientOnly>
+                        </CardContent>
+                     </Card>
                   </div>
-               </Card>
+               )}
             </div>
          </div>
       </div>
 
-      {/* Side Study Resources / AI Guide Drawer */}
-      {selectedTimelineStep && (
-        <div className="fixed inset-0 z-50 flex justify-end bg-black/70 backdrop-blur-sm animate-in fade-in duration-300">
-           <div className="w-full max-w-lg bg-white dark:bg-zinc-950 border-l border-zinc-200 dark:border-white/10 h-full p-8 flex flex-col space-y-6 overflow-y-auto animate-in slide-in-from-right duration-350 scrollbar-hide">
-              <div className="flex items-center justify-between border-b border-white/5 pb-4">
-                 <div>
-                    <Badge variant="outline" className="text-primary border-primary/20 bg-primary/10 mb-1.5 uppercase font-bold tracking-widest text-[9px]">
-                       {selectedTimelineStep.type}
-                    </Badge>
-                    <h3 className="text-lg font-bold text-zinc-900 dark:text-white leading-tight">{selectedTimelineStep.title}</h3>
-                 </div>
-                 <Button 
-                   variant="ghost" 
-                   size="icon" 
-                   className="h-8 w-8 rounded-full bg-zinc-900 border border-white/5 text-zinc-450 hover:text-white cursor-pointer"
-                   onClick={() => {
-                     setSelectedTimelineStep(null);
-                     setAiReportContent(null);
-                   }}
-                 >
-                    <X size={14} />
-                 </Button>
-              </div>
-
-              <div className="space-y-3">
-                 <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Description</h4>
-                 <p className="text-xs text-zinc-350 leading-relaxed bg-zinc-900/30 p-4 rounded-xl border border-white/5">
-                    {selectedTimelineStep.description}
-                 </p>
-              </div>
-
-              <div className="space-y-3">
-                 <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Recommended Study Resources</h4>
-                 <div className="grid grid-cols-1 gap-2.5">
-                    {[
-                      { name: "Official Documentation / Guides", url: "https://developer.mozilla.org", source: "MDN / Official Docs" },
-                      { name: "roadmap.sh Interactive learning Guides", url: "https://roadmap.sh", source: "Developer Roadmaps" },
-                      { name: "GitHub System Design Primer", url: "https://github.com/donnemartin/system-design-primer", source: "System Design Concepts" }
-                    ].map((res, i) => (
-                      <a 
-                        key={i} 
-                        href={res.url} 
-                        target="_blank" 
-                        rel="noreferrer"
-                        className="flex items-center justify-between p-3.5 rounded-xl bg-zinc-900/60 border border-white/5 hover:border-primary/40 hover:bg-zinc-900/80 transition-all group"
-                      >
-                         <div>
-                            <p className="text-xs font-bold text-white group-hover:text-primary transition-colors">{res.name}</p>
-                            <p className="text-[10px] text-zinc-500 font-mono mt-0.5">{res.source}</p>
-                         </div>
-                         <ChevronRight size={14} className="text-zinc-500 group-hover:text-white transition-transform group-hover:translate-x-0.5" />
-                      </a>
-                    ))}
-                 </div>
-              </div>
-
-              <div className="space-y-4 pt-4 border-t border-white/5 flex-1 flex flex-col justify-end">
-                 {aiReportContent ? (
-                    <div className="bg-primary/5 border border-primary/10 rounded-2xl p-5 space-y-3 max-h-[300px] overflow-y-auto select-text text-zinc-300">
-                       {renderFormattedText(aiReportContent)}
-                    </div>
-                 ) : (
-                    <Button 
-                      className="w-full h-11 bg-primary text-primary-foreground font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:opacity-95 text-xs uppercase tracking-widest font-sans"
-                      onClick={() => generateAiStudyGuide(selectedTimelineStep.title)}
-                      disabled={aiReportGenerating}
-                    >
-                       {aiReportGenerating ? (
-                          <Loader2 size={14} className="animate-spin" />
-                       ) : (
-                          <Sparkles size={14} />
-                       )}
-                       Generate AI Study Guide Report
-                    </Button>
-                 )}
-              </div>
-           </div>
-        </div>
-      )}
-      {/* Custom Regeneration Modal */}
+      {/* Custom Onboarding Regeneration Modal */}
       {showRegenModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-in fade-in duration-200">
           <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-white/10 rounded-3xl p-8 max-w-md w-full space-y-6 relative shadow-2xl text-zinc-900 dark:text-white">
             <Button
               variant="ghost"
               size="icon"
-              className="absolute top-4 right-4 h-8 w-8 rounded-full bg-zinc-900 border border-white/5 text-zinc-400 hover:text-white cursor-pointer"
+              className="absolute top-4 right-4 h-8 w-8 rounded-full bg-zinc-900 border border-white/5 text-zinc-450 hover:text-white cursor-pointer"
               onClick={() => setShowRegenModal(false)}
             >
               <X size={14} />
@@ -629,7 +896,7 @@ Build a live developer metric dashboard to demonstrate frontend and backend capa
                   type="text" 
                   value={modalGoal} 
                   onChange={(e) => setModalGoal(e.target.value)}
-                  placeholder="e.g. Full Stack Engineer Transition"
+                  placeholder="e.g. Senior Full Stack Engineer at Atlassian"
                   className="w-full bg-zinc-100/50 dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white rounded-xl h-11 px-4 outline-none focus:border-primary/50 transition-all font-mono placeholder:text-zinc-500"
                 />
               </div>
@@ -682,3 +949,24 @@ Build a live developer metric dashboard to demonstrate frontend and backend capa
   );
 }
 
+// Inline helper for resource link icon mapping
+function LinkIconWrapper(props: React.ComponentProps<"svg">) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={props.className}
+    >
+      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+    </svg>
+  );
+}

@@ -473,3 +473,121 @@ exports.evaluateCodeAgainstTests = async (question, code, language) => {
     };
   }
 };
+
+// -------- Generate Lazy Step Assets (Study Guide, Resources, Projects, Interview, Revision) via Groq --------
+exports.generateLazyStepAssets = async (stepTitle, goal) => {
+  const prompt = `
+You are an expert technical interviewer and AI career coach.
+Generate a comprehensive study guide, resource links, practice projects, prep interview questions, and revision checklist items for the milestone topic: "${stepTitle}".
+The candidate's target career goal is: "${goal}".
+
+You must return a STRICT raw JSON response ONLY. Do NOT wrap it in HTML tags, markdown code blocks, or conversational text.
+Ensure there are no raw unescaped newlines inside the JSON string values (escape them as \\n).
+
+JSON Schema matching:
+{
+  "study_guide_markdown": "Markdown string covering:\\n1. Overview\\n2. Learning Objectives\\n3. Advanced Core Concepts\\nEnsure the markdown output is clean, formatted, and complete.",
+  "recommended_resources": [
+    {
+      "title": "Resource Title",
+      "url": "https://example.com/url (real URL matching the resource if possible, or standard reference URL)",
+      "source": "Official Documentation | GitHub | YouTube | Article | Book | Course",
+      "reason": "Why this resource is recommended..."
+    }
+  ],
+  "practice_projects": [
+    {
+      "title": "Authentication API or similar hands-on project",
+      "description": "Short overview of the project.",
+      "difficulty": "beginner | intermediate | advanced",
+      "estimated_time": "Estimated completion time, e.g. 4 hours",
+      "tasks": [
+        {
+          "title": "Task title (e.g. JWT)",
+          "difficulty": "beginner | intermediate | advanced",
+          "estimatedTime": "e.g. 30 mins"
+        }
+      ]
+    }
+  ],
+  "interview_preps": [
+    {
+      "difficulty": "beginner | intermediate | advanced | follow_up",
+      "question_text": "Detailed interview question text.",
+      "expected_answer": "Expected approach, explanation, or code strategy details.",
+      "tags": ["Tag1", "Tag2"],
+      "estimated_duration": 15
+    }
+  ],
+  "revision_checklist": [
+    "Revision checklist item title (e.g. JWT cookies usage)"
+  ]
+}
+`;
+
+  try {
+    const response = await groq.chat.completions.create({
+      model: "llama-3.1-8b-instant",
+      messages: [
+        { role: "system", content: "You are a professional technical mentor. Return ONLY raw strictly valid JSON matching the requested schema." },
+        { role: "user", content: prompt }
+      ]
+    });
+
+    const parsed = safeParseAIJSON(response.choices[0].message.content);
+
+    // Validate structure arrays
+    if (!parsed.recommended_resources || !Array.isArray(parsed.recommended_resources)) parsed.recommended_resources = [];
+    if (!parsed.practice_projects || !Array.isArray(parsed.practice_projects)) parsed.practice_projects = [];
+    if (!parsed.interview_preps || !Array.isArray(parsed.interview_preps)) parsed.interview_preps = [];
+    if (!parsed.revision_checklist || !Array.isArray(parsed.revision_checklist)) parsed.revision_checklist = [];
+
+    return parsed;
+  } catch (error) {
+    console.error("[Groq AI Error] Failed to generate lazy step assets:", error);
+    // Provide a detailed fallback structure matching the schemas
+    return {
+      study_guide_markdown: `### Overview\nLearning plan for **${stepTitle}** to achieve goal: *${goal}*.\n\n### Learning Objectives\n- Understand core mechanisms and integration methods.\n- Practice implementation patterns.`,
+      recommended_resources: [
+        {
+          title: "Official Documentation",
+          url: "https://developer.mozilla.org",
+          source: "Official Documentation",
+          reason: "Essential reference materials covering core usage and patterns."
+        },
+        {
+          title: "roadmap.sh Guides",
+          url: "https://roadmap.sh",
+          source: "Course",
+          reason: "Step-by-step visuals showing developers learning paths."
+        }
+      ],
+      practice_projects: [
+        {
+          title: "Hands-on Practice Sandbox",
+          description: "Build a prototype showcasing core implementations.",
+          difficulty: "intermediate",
+          estimated_time: "4 hours",
+          tasks: [
+            { title: "Configure local boilerplate", difficulty: "beginner", estimatedTime: "30 mins" },
+            { title: "Write core logic parameters", difficulty: "intermediate", estimatedTime: "90 mins" },
+            { title: "Add verification testing suite", difficulty: "advanced", estimatedTime: "60 mins" }
+          ]
+        }
+      ],
+      interview_preps: [
+        {
+          difficulty: "intermediate",
+          question_text: `What are the pros and cons of using ${stepTitle} in a modern web service?`,
+          expected_answer: "Explain architecture constraints, scaling limits, caching strategies.",
+          tags: ["Architecture", "System Design"],
+          estimated_duration: 20
+        }
+      ],
+      revision_checklist: [
+        "Review core definition criteria",
+        "Verify optimization edge bounds"
+      ]
+    };
+  }
+};

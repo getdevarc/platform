@@ -3,7 +3,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { Sparkles, LucideIcon } from "lucide-react";
+import { Sparkles, LucideIcon, CheckCircle2 } from "lucide-react";
 
 // 1. SECTION HEADER
 interface SectionHeaderProps {
@@ -23,10 +23,10 @@ export function SectionHeader({ title, highlight, badge, description, className 
           {badge}
         </span>
       )}
-      <h2 className="text-3xl font-bold tracking-tight text-white">
+      <h2 className="text-3xl font-bold tracking-tight text-foreground">
         {title} {highlight && <span className="text-primary italic font-serif">{highlight}</span>}
       </h2>
-      {description && <p className="text-sm text-zinc-400 max-w-2xl leading-relaxed">{description}</p>}
+      {description && <p className="text-sm text-muted-foreground max-w-2xl leading-relaxed">{description}</p>}
     </div>
   );
 }
@@ -50,7 +50,7 @@ export function FeatureCard({ title, description, badge, icon: Icon, children, c
       onClick={onClick}
       whileHover={onClick ? { y: -4 } : undefined}
       className={cn(
-        "text-left block w-full rounded-2xl border border-white/5 bg-zinc-950/40 p-6 backdrop-blur-md transition-colors hover:border-primary/20",
+        "text-left block w-full rounded-2xl border border-border bg-card/60 p-6 backdrop-blur-md transition-colors hover:border-primary/20",
         className
       )}
     >
@@ -63,13 +63,13 @@ export function FeatureCard({ title, description, badge, icon: Icon, children, c
           )}
           <div className="flex items-center gap-2.5">
             {Icon && (
-              <div className="h-9 w-9 flex items-center justify-center rounded-xl bg-zinc-900 border border-white/5 text-zinc-400 group-hover:text-primary transition-colors">
+              <div className="h-9 w-9 flex items-center justify-center rounded-xl bg-muted border border-border text-muted-foreground group-hover:text-primary transition-colors">
                 <Icon size={18} />
               </div>
             )}
-            <h3 className="text-lg font-bold text-white tracking-wide">{title}</h3>
+            <h3 className="text-lg font-bold text-foreground tracking-wide">{title}</h3>
           </div>
-          <p className="text-xs text-zinc-400 leading-normal">{description}</p>
+          <p className="text-xs text-muted-foreground leading-normal">{description}</p>
         </div>
       </div>
       {children && <div className="mt-4">{children}</div>}
@@ -89,17 +89,17 @@ interface StatCardProps {
 
 export function StatCard({ title, value, highlight = "Tracked", color = "text-primary", icon: Icon, className }: StatCardProps) {
   return (
-    <div className={cn("rounded-2xl border border-white/5 bg-zinc-950/20 p-5 backdrop-blur-sm transition-colors hover:border-primary/20", className)}>
+    <div className={cn("rounded-2xl border border-border bg-muted/40 p-5 backdrop-blur-sm transition-colors hover:border-primary/20", className)}>
       <div className="flex flex-row items-center justify-between pb-2">
-        <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
           {title}
         </span>
         <Icon size={16} className={cn(color)} />
       </div>
-      <div className="flex items-end gap-2 text-white mt-1">
+      <div className="flex items-end gap-2 text-foreground mt-1">
         <span className="text-3xl font-bold tracking-tighter">{value}</span>
         {highlight && (
-          <span className="text-[10px] text-zinc-650 font-bold mb-1.5 uppercase tracking-wide">
+          <span className="text-[10px] text-muted-foreground/60 font-bold mb-1.5 uppercase tracking-wide">
             {highlight}
           </span>
         )}
@@ -127,7 +127,7 @@ export function AiRecommendationCard({ recommendation, actionLabel, onAction, ti
             <Sparkles size={14} className="animate-pulse" />
             <span className="text-[10px] font-extrabold uppercase tracking-widest">{title}</span>
           </div>
-          <p className="text-xs text-zinc-300 leading-relaxed font-medium">
+          <p className="text-xs text-foreground/80 leading-relaxed font-medium">
             {recommendation}
           </p>
         </div>
@@ -151,37 +151,38 @@ interface TimelineNodeProps {
   status: "completed" | "current" | "locked";
   type?: string;
   isLast?: boolean;
+  hasGuide?: boolean;
   onClick?: () => void;
   className?: string;
 }
 
-export function TimelineNode({ title, description, status, type, isLast, onClick, className }: TimelineNodeProps) {
+export function TimelineNode({ title, description, status, type, isLast, hasGuide, onClick, className }: TimelineNodeProps) {
   return (
     <div className={cn("relative pl-10 pb-8 group last:pb-0", className)} onClick={onClick}>
       {/* Connector stem */}
       {!isLast && (
         <div className={cn(
           "absolute left-4 top-6 bottom-0 w-0.5 border-l border-dashed",
-          status === "completed" ? "border-emerald-500/40" : "border-zinc-800"
+          status === "completed" ? "border-emerald-500/40" : "border-border"
         )} />
       )}
       
       {/* Node bullet */}
       <div className={cn(
-        "absolute left-1.5 top-1.5 h-5 w-5 rounded-full border-4 border-black flex items-center justify-center transition-all",
-        status === "completed" ? "bg-emerald-500 scale-110 border-emerald-950" : 
-        status === "current" ? "bg-primary animate-pulse border-primary-950" : 
-        "bg-zinc-800 border-zinc-950"
+        "absolute left-1.5 top-1.5 h-5 w-5 rounded-full border-4 flex items-center justify-center transition-all",
+        status === "completed" ? "bg-emerald-500 scale-110 border-emerald-950 dark:border-emerald-950" : 
+        status === "current" ? "bg-primary animate-pulse border-primary/30" : 
+        "bg-muted border-border"
       )} />
 
       <div className={cn(
-        "p-5 rounded-2xl border transition-all cursor-pointer bg-zinc-950/30 hover:border-primary/20",
-        status === "current" ? "border-primary/20 bg-primary/5" : "border-white/5"
+        "p-5 rounded-2xl border transition-all cursor-pointer bg-card/40 hover:border-primary/20",
+        status === "current" ? "border-primary/20 bg-primary/5" : "border-border"
       )}>
         <div className="space-y-1.5">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {type && (
-              <span className="px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-widest rounded bg-zinc-900 text-zinc-500 border border-white/5">
+              <span className="px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-widest rounded bg-muted text-muted-foreground border border-border">
                 {type}
               </span>
             )}
@@ -190,9 +191,15 @@ export function TimelineNode({ title, description, status, type, isLast, onClick
                 Active
               </span>
             )}
+            {hasGuide && (
+              <span className="px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-widest rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+                <CheckCircle2 size={10} />
+                Study Guide Available
+              </span>
+            )}
           </div>
-          <h4 className="text-sm font-bold text-white group-hover:text-primary transition-colors">{title}</h4>
-          <p className="text-xs text-zinc-400 leading-relaxed">{description}</p>
+          <h4 className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">{title}</h4>
+          <p className="text-xs text-muted-foreground leading-relaxed">{description}</p>
         </div>
       </div>
     </div>
@@ -204,13 +211,13 @@ export function WorkspaceSkeleton({ count = 3, className }: { count?: number; cl
   return (
     <div className={cn("space-y-4", className)}>
       {Array.from({ length: count }).map((_, idx) => (
-        <div key={idx} className="p-5 rounded-2xl bg-zinc-900/10 border border-white/5 space-y-3 animate-pulse">
+        <div key={idx} className="p-5 rounded-2xl bg-muted/40 border border-border space-y-3 animate-pulse">
           <div className="flex gap-2">
-            <div className="h-4 w-12 bg-zinc-800 rounded" />
-            <div className="h-4 w-24 bg-zinc-800 rounded" />
+            <div className="h-4 w-12 bg-muted rounded" />
+            <div className="h-4 w-24 bg-muted rounded" />
           </div>
-          <div className="h-5 w-2/3 bg-zinc-800 rounded" />
-          <div className="h-4 w-full bg-zinc-800 rounded" />
+          <div className="h-5 w-2/3 bg-muted rounded" />
+          <div className="h-4 w-full bg-muted rounded" />
         </div>
       ))}
     </div>
@@ -229,7 +236,7 @@ interface BaseHeroProps {
 
 export function BaseHero({ badgeText, title, highlight, description, actions, className }: BaseHeroProps) {
   return (
-    <div className={cn("relative p-8 md:p-10 rounded-3xl border border-white/5 bg-zinc-950/80 overflow-hidden shadow-2xl", className)}>
+    <div className={cn("relative p-8 md:p-10 rounded-3xl border border-border bg-card/80 overflow-hidden shadow-2xl", className)}>
       <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 blur-[100px] -z-10" />
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">
         <div className="space-y-2.5 max-w-2xl text-left">
@@ -239,10 +246,10 @@ export function BaseHero({ badgeText, title, highlight, description, actions, cl
               {badgeText}
             </span>
           )}
-          <h1 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+          <h1 className="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
             {title} {highlight && <span className="text-primary italic font-serif">{highlight}</span>}
           </h1>
-          <p className="text-zinc-400 text-sm md:text-base leading-relaxed">
+          <p className="text-muted-foreground text-sm md:text-base leading-relaxed">
             {description}
           </p>
         </div>

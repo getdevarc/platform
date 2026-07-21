@@ -26,17 +26,22 @@ import {
   Menu,
   X,
   Sun,
-  Moon
+  Moon,
+  Home,
+  BookOpen
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useLoaderStore } from "@/store/useLoaderStore";
-import { useTheme } from "next-themes";
+import { useThemeTransition } from "@/hooks/useThemeTransition";
+import { canAccessAdminPortal } from "@/lib/permissions";
+
+const landingUrl = process.env.NEXT_PUBLIC_LANDING_URL || "http://localhost:3000";
 
 export function Navbar() {
   const pathname = usePathname();
   const { user, logout, isAuthenticated } = useAuthStore();
-  const { theme, setTheme } = useTheme();
+  const { theme, toggleTheme } = useThemeTransition();
   const [mounted, setMounted] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [hasActiveInterview, setHasActiveInterview] = useState(false);
@@ -60,9 +65,11 @@ export function Navbar() {
   }, []);
 
   const navLinks = [
+    { name: "Home", href: landingUrl, icon: Home },
     { name: "Problems", href: "/problems", icon: Code2 },
     { name: "Interview", href: "/interview", icon: MessageSquareCode },
     { name: "Career", href: "/career", icon: Compass },
+    { name: "Learn", href: "/learn", icon: BookOpen },
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   ];
 
@@ -84,7 +91,7 @@ export function Navbar() {
               <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground font-bold text-sm shadow-lg shadow-primary/20">
                 DA
               </div>
-              <span className="font-bold text-lg tracking-tight text-white">DevArc</span>
+              <span className="font-bold text-lg tracking-tight text-foreground">DevArc</span>
             </Link>
           )}
 
@@ -107,7 +114,7 @@ export function Navbar() {
                         "h-9 gap-2 px-4 transition-all duration-200",
                         isActive 
                           ? "bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary" 
-                          : "text-zinc-400 hover:text-white hover:bg-white/5"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
                       )}
                     >
                       <Icon size={16} />
@@ -136,7 +143,7 @@ export function Navbar() {
               variant="outline"
               size="icon"
               className="h-8 w-8 rounded-xl border-border bg-card hover:bg-accent text-muted-foreground hover:text-foreground hidden md:flex items-center justify-center shrink-0"
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              onClick={() => toggleTheme()}
             >
               {theme === "dark" ? <Sun size={14} className="text-yellow-500" /> : <Moon size={14} className="text-blue-400" />}
             </Button>
@@ -193,6 +200,14 @@ export function Navbar() {
                       AI Credits
                     </DropdownMenuItem>
                   </Link>
+                  {canAccessAdminPortal(user) && (
+                    <Link href="/admin">
+                      <DropdownMenuItem className="gap-2 py-2.5 cursor-pointer focus:bg-primary/10 text-primary flex items-center outline-none font-semibold">
+                        <Sparkles size={16} className="text-primary animate-pulse" />
+                        Admin Panel
+                      </DropdownMenuItem>
+                    </Link>
+                  )}
                   <DropdownMenuSeparator className="bg-zinc-200 dark:bg-white/5" />
                   <DropdownMenuItem 
                     className="gap-2 py-2.5 cursor-pointer focus:bg-red-500/10 text-zinc-700 dark:text-zinc-300 focus:text-red-600 dark:focus:text-red-400 outline-none"
@@ -251,7 +266,7 @@ export function Navbar() {
               {mounted && (
                 <div 
                   onClick={() => {
-                    setTheme(theme === "dark" ? "light" : "dark");
+                    toggleTheme();
                     setIsMobileMenuOpen(false);
                   }}
                   className="flex items-center justify-between p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-200 dark:border-white/5 text-zinc-600 dark:text-zinc-400 cursor-pointer"

@@ -109,10 +109,10 @@ export default function ForgotPasswordPage() {
   const SlideIcon = SLIDES[currentSlide].icon;
 
   return (
-    <div className="min-h-screen bg-[#070707] grid grid-cols-1 lg:grid-cols-12 select-none overflow-x-hidden font-sans">
+    <div className="min-h-screen bg-background text-foreground grid grid-cols-1 lg:grid-cols-12 select-none overflow-x-hidden font-sans">
       {/* LEFT SIDE (~65%): HERO SLIDESHOW */}
-      <div className="hidden lg:flex lg:col-span-8 relative flex-col justify-between p-12 overflow-hidden border-r border-white/5">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,_#111111,_#060606_80%)] -z-10" />
+      <div className="hidden lg:flex lg:col-span-8 relative flex-col justify-between p-12 overflow-hidden border-r border-border">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,_var(--secondary),_var(--background)_80%)] -z-10" />
         <div className="absolute top-[20%] left-[10%] w-[400px] h-[400px] bg-primary/10 rounded-full blur-[140px] -z-10" />
         
         {/* Header */}
@@ -120,7 +120,7 @@ export default function ForgotPasswordPage() {
           <div className="h-10 w-10 bg-primary rounded-xl flex items-center justify-center text-primary-foreground font-extrabold text-lg shadow-lg shadow-primary/20">
             DA
           </div>
-          <span className="font-bold text-xl tracking-tight bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">
+          <span className="font-bold text-xl tracking-tight bg-gradient-to-r from-foreground to-zinc-500 bg-clip-text text-transparent">
             DevArc
           </span>
           <span className="text-[10px] font-extrabold text-primary uppercase tracking-widest bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full ml-1">
@@ -140,18 +140,18 @@ export default function ForgotPasswordPage() {
               className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center"
             >
               <div className="md:col-span-5 space-y-6">
-                <div className="inline-flex items-center justify-center h-12 w-12 rounded-2xl bg-zinc-900 border border-white/10 text-primary mb-2 shadow-xl shadow-black/40">
+                <div className="inline-flex items-center justify-center h-12 w-12 rounded-2xl bg-card border border-border text-primary mb-2 shadow-xl shadow-black/10 dark:shadow-black/40">
                   <SlideIcon size={24} className="text-primary" />
                 </div>
-                <h2 className="text-3xl font-extrabold tracking-tight text-white leading-tight">
+                <h2 className="text-3xl font-extrabold tracking-tight text-foreground leading-tight">
                   {SLIDES[currentSlide].title}
                 </h2>
-                <p className="text-sm text-zinc-455 text-zinc-400 leading-relaxed">
+                <p className="text-sm text-muted-foreground leading-relaxed">
                   {SLIDES[currentSlide].description}
                 </p>
               </div>
 
-              <div className="md:col-span-7 bg-zinc-950/40 border border-white/5 rounded-2xl p-2 shadow-2xl backdrop-blur-xl max-h-[300px] overflow-hidden flex items-center justify-center">
+              <div className="md:col-span-7 bg-card/40 border border-border rounded-xl p-2 shadow-2xl backdrop-blur-xl max-h-[300px] overflow-hidden flex items-center justify-center">
                 <img 
                   src={SLIDES[currentSlide].image} 
                   alt={SLIDES[currentSlide].title} 
@@ -169,8 +169,8 @@ export default function ForgotPasswordPage() {
               <button
                 key={idx}
                 onClick={() => setCurrentSlide(idx)}
-                className={`h-1.5 rounded-full transition-all duration-305 transition-all duration-300 ${
-                  currentSlide === idx ? "w-8 bg-primary" : "w-2 bg-zinc-800 hover:bg-zinc-700"
+                className={`h-1.5 rounded-full transition-all duration-300 ${
+                  currentSlide === idx ? "w-8 bg-primary" : "w-2 bg-muted hover:bg-zinc-550"
                 }`}
               />
             ))}
@@ -182,7 +182,7 @@ export default function ForgotPasswordPage() {
       </div>
 
       {/* RIGHT SIDE (~35%): CARD PANEL */}
-      <div className="col-span-1 lg:col-span-4 flex items-center justify-center p-6 relative bg-[#090909] lg:bg-transparent">
+      <div className="col-span-1 lg:col-span-4 flex items-center justify-center p-6 relative bg-card lg:bg-transparent">
         <div className="absolute top-[20%] right-[10%] w-[250px] h-[250px] bg-primary/10 rounded-full blur-[80px] lg:hidden -z-10" />
 
         <div className="w-full max-w-sm space-y-6 z-10">
@@ -191,14 +191,14 @@ export default function ForgotPasswordPage() {
             <div className="h-12 w-12 bg-primary rounded-xl flex items-center justify-center text-primary-foreground font-bold text-xl shadow-lg shadow-primary/20">
               DA
             </div>
-            <h1 className="text-2xl font-bold tracking-tight text-white mt-1">DevArc Workspace</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground mt-1">DevArc Workspace</h1>
             <p className="text-xs text-zinc-500">Reset your forgotten password credential.</p>
           </div>
 
-          <Card className="border border-white/5 bg-zinc-950/40 backdrop-blur-xl shadow-2xl rounded-2xl">
+          <Card className="border border-border bg-card/40 backdrop-blur-xl shadow-2xl rounded-2xl">
             <CardHeader className="space-y-1 pb-4">
-              <CardTitle className="text-xl font-bold tracking-tight text-white hidden lg:block">Reset Password</CardTitle>
-              <CardDescription className="text-zinc-500 text-xs hidden lg:block">
+              <CardTitle className="text-xl font-bold tracking-tight text-foreground hidden lg:block">Reset Password</CardTitle>
+              <CardDescription className="text-muted-foreground text-xs hidden lg:block">
                 {step === 1 ? "Enter your email to receive a recovery code." : "Enter confirmation OTP and choice password."}
               </CardDescription>
             </CardHeader>
@@ -216,7 +216,7 @@ export default function ForgotPasswordPage() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
-                        className="bg-zinc-900/40 border-white/5 h-11 pl-9 text-white placeholder:text-zinc-600 focus:border-primary/50 transition-colors rounded-xl text-sm"
+                        className="bg-background/40 border-border h-11 pl-9 text-foreground placeholder:text-zinc-500 focus:border-primary/50 transition-colors rounded-xl text-sm"
                       />
                       <Mail size={16} className="absolute left-3 top-3.5 text-zinc-500" />
                     </div>
@@ -232,7 +232,7 @@ export default function ForgotPasswordPage() {
                     Request Reset Code
                     <ArrowRight size={14} className="ml-1.5" />
                   </Button>
-                  <Link href="/login" className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-white mx-auto">
+                  <Link href="/login" className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground mx-auto">
                     <ArrowLeft size={12} /> Back to Login
                   </Link>
                 </CardFooter>
@@ -249,7 +249,7 @@ export default function ForgotPasswordPage() {
                       value={otp}
                       onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ""))}
                       required
-                      className="bg-zinc-900/40 border-white/5 h-11 text-center font-mono tracking-widest text-lg text-white placeholder:text-zinc-700 focus:border-primary/50 transition-colors rounded-xl"
+                      className="bg-background/40 border-border h-11 text-center font-mono tracking-widest text-lg text-foreground placeholder:text-zinc-500 focus:border-primary/50 transition-colors rounded-xl"
                     />
                   </div>
                   <div className="space-y-2">
@@ -262,7 +262,7 @@ export default function ForgotPasswordPage() {
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                         required
-                        className="bg-zinc-900/40 border-white/5 h-11 pl-9 text-white placeholder:text-zinc-650 focus:border-primary/50 transition-colors rounded-xl text-sm"
+                        className="bg-background/40 border-border h-11 pl-9 text-foreground placeholder:text-zinc-500 focus:border-primary/50 transition-colors rounded-xl text-sm"
                       />
                       <KeyRound size={16} className="absolute left-3 top-3.5 text-zinc-500" />
                     </div>
@@ -273,7 +273,7 @@ export default function ForgotPasswordPage() {
                     <Button
                       type="button"
                       variant="outline"
-                      className="h-11 px-4 rounded-xl border-white/10 bg-zinc-900/20 hover:bg-zinc-900/40 text-zinc-400 hover:text-white"
+                      className="h-11 px-4 rounded-xl border-border bg-secondary/20 hover:bg-secondary/40 text-muted-foreground hover:text-foreground"
                       onClick={() => setStep(1)}
                       disabled={loading}
                     >

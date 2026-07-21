@@ -1,7 +1,12 @@
 const pino = require("pino");
+const { contextStorage } = require("../utils/context");
 
 const logger = pino({
   level: process.env.LOG_LEVEL || "info",
+  mixin() {
+    const store = contextStorage.getStore();
+    return store ? { requestId: store.requestId } : {};
+  },
   transport: {
     target: "pino-pretty",
     options: {
