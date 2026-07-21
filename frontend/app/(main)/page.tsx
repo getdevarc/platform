@@ -524,9 +524,9 @@ export default function LandingPage() {
           </p>
 
           <div className="flex gap-4">
-            <Link href="#" className="hover:text-foreground transition-colors">Privacy Policy</Link>
+            <Link href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</Link>
             <span>•</span>
-            <Link href="#" className="hover:text-foreground transition-colors">Terms of Service</Link>
+            <Link href="/terms" className="hover:text-foreground transition-colors">Terms of Service</Link>
           </div>
         </div>
       </footer>
