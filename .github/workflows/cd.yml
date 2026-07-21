@@ -101,6 +101,69 @@ jobs:
           role-to-assume: arn:aws:iam::057462648032:role/DevArcGitHubActionsCDRole
           aws-region: ap-south-1
 
+      - name: Validate GitHub Secrets
+        run: |
+          REQUIRED_SECRETS=(
+            "PORT"
+            "NODE_ENV"
+            "DATABASE_URL"
+            "JWT_SECRET"
+            "GROQ_API_KEY"
+            "CORS_ORIGIN"
+            "SMTP_HOST"
+            "SMTP_PORT"
+            "SMTP_USER"
+            "SMTP_PASS"
+            "SMTP_FROM"
+            "SMTP_FROM_NAME"
+            "SMTP_FROM_SUPPORT"
+            "JUDGE0_API_KEY"
+          )
+          
+          for SECRET_NAME in "${REQUIRED_SECRETS[@]}"; do
+            var_name="SECRET_${SECRET_NAME}"
+            val="${!var_name}"
+            val_trimmed=$(echo "$val" | tr -d '[:space:]')
+            if [ -z "$val_trimmed" ]; then
+              echo "Error: Required secret $SECRET_NAME is missing, empty, or only contains whitespace." >&2
+              exit 1
+            fi
+          done
+        env:
+          SECRET_PORT: ${{ secrets.PORT }}
+          SECRET_NODE_ENV: ${{ secrets.NODE_ENV }}
+          SECRET_DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SECRET_JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          SECRET_GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          SECRET_CORS_ORIGIN: ${{ secrets.CORS_ORIGIN }}
+          SECRET_SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SECRET_SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SECRET_SMTP_USER: ${{ secrets.SMTP_USER }}
+          SECRET_SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          SECRET_SMTP_FROM: ${{ secrets.SMTP_FROM }}
+          SECRET_SMTP_FROM_NAME: ${{ secrets.SMTP_FROM_NAME }}
+          SECRET_SMTP_FROM_SUPPORT: ${{ secrets.SMTP_FROM_SUPPORT }}
+          SECRET_JUDGE0_API_KEY: ${{ secrets.JUDGE0_API_KEY }}
+
+      - name: Generate Env File
+        run: |
+          cat << EOF > backend.env
+          PORT=${{ secrets.PORT }}
+          NODE_ENV=${{ secrets.NODE_ENV }}
+          DATABASE_URL=${{ secrets.DATABASE_URL }}
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}
+          CORS_ORIGIN=${{ secrets.CORS_ORIGIN }}
+          SMTP_HOST=${{ secrets.SMTP_HOST }}
+          SMTP_PORT=${{ secrets.SMTP_PORT }}
+          SMTP_USER=${{ secrets.SMTP_USER }}
+          SMTP_PASS=${{ secrets.SMTP_PASS }}
+          SMTP_FROM=${{ secrets.SMTP_FROM }}
+          SMTP_FROM_NAME=${{ secrets.SMTP_FROM_NAME }}
+          SMTP_FROM_SUPPORT=${{ secrets.SMTP_FROM_SUPPORT }}
+          JUDGE0_API_KEY=${{ secrets.JUDGE0_API_KEY }}
+          EOF
+
       - name: Create Remote Deployment Script
         run: |
           cat << 'EOF' > deploy.sh
@@ -196,6 +259,12 @@ jobs:
             if [ "$DEPLOYMENT_STARTED" != "true" ]; then
               echo "Deployment was not started yet. No container rollback required."
               exit "$exit_code"
+            fi
+
+            if [ -f "/opt/devarc/backend.env.bak" ]; then
+              echo "Restoring backend environment backup..."
+              mv -f /opt/devarc/backend.env.bak /opt/devarc/backend.env
+              chmod 600 /opt/devarc/backend.env
             fi
 
             echo "Attempting to roll back containers to original releases..."
@@ -328,6 +397,7 @@ jobs:
           echo "Running post-deployment external health checks..."
           check_external_health
 
+          rm -f /opt/devarc/backend.env.bak
           trap - ERR
           echo "Deployment of release $RELEASE_SHA successfully completed!"
           exit 0
@@ -339,8 +409,19 @@ jobs:
         run: |
           jq -n \
             --arg sha "${{ github.sha }}" \
+            --arg env_content "$(cat backend.env)" \
             --arg script "$(cat deploy.sh)" \
-            '{"commands": ["export RELEASE_SHA=\"" + $sha + "\"\n" + $script]}' \
+            '{"commands": [
+              "mkdir -p /opt/devarc",
+              "cat << '\''EOF'\'' > /opt/devarc/backend.env.new\n" + $env_content + "\nEOF",
+              "if [ ! -f /opt/devarc/backend.env.new ] || [ ! -s /opt/devarc/backend.env.new ]; then\n  echo \"Error: backend.env.new is missing or empty!\" >&2\n  exit 1\nfi",
+              "for var in PORT NODE_ENV DATABASE_URL JWT_SECRET CORS_ORIGIN GROQ_API_KEY JUDGE0_API_KEY SMTP_HOST SMTP_PORT SMTP_USER SMTP_PASS SMTP_FROM SMTP_FROM_NAME SMTP_FROM_SUPPORT; do\n  if ! grep -q \"^${var}=\" /opt/devarc/backend.env.new; then\n    echo \"Error: Required variable $var is missing from backend.env.new\" >&2\n    exit 1\n  fi\ndone",
+              "if [ -f /opt/devarc/backend.env ]; then\n  cp -p /opt/devarc/backend.env /opt/devarc/backend.env.bak\nfi",
+              "mv -f /opt/devarc/backend.env.new /opt/devarc/backend.env",
+              "chmod 600 /opt/devarc/backend.env",
+              "export RELEASE_SHA=\"" + $sha + "\"",
+              $script
+            ]}' \
             > ssm_params.json
 
           cmd_json=$(aws ssm send-command \
@@ -351,6 +432,11 @@ jobs:
           command_id=$(echo "$cmd_json" | jq -r '.Command.CommandId')
           echo "command_id=$command_id" >> "$GITHUB_OUTPUT"
           echo "Dispatched SSM Command ID: $command_id"
+
+      - name: Clean up temporary files
+        if: always()
+        run: |
+          rm -f backend.env ssm_params.json deploy.sh
 
       - name: Validate Command ID
         run: |
