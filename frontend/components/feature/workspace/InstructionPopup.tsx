@@ -33,7 +33,7 @@ export function InstructionPopup({ problemTitle, onStart }: InstructionPopupProp
         transition={{ duration: 0.3 }}
         className="w-full max-w-xl"
       >
-        <Card className="border-zinc-200 dark:border-white/10 bg-white/90 dark:bg-zinc-950/80 backdrop-blur-xl shadow-2xl relative overflow-hidden rounded-3xl">
+        <Card className="border-border bg-card/90 backdrop-blur-xl shadow-2xl relative overflow-hidden rounded-3xl">
           {/* Top Energy bar */}
           <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-primary via-emerald-500 to-primary animate-pulse" />
           <div className="absolute -top-12 -right-12 w-32 h-32 bg-primary/10 blur-[60px] rounded-full -z-10" />
@@ -42,41 +42,41 @@ export function InstructionPopup({ problemTitle, onStart }: InstructionPopupProp
             <div className="mx-auto h-14 w-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-4 shadow-lg shadow-primary/5">
               <Trophy size={26} className="text-primary animate-bounce-slow" />
             </div>
-            <CardTitle className="text-2xl font-bold text-zinc-900 dark:text-white tracking-tight">Ready to Solve?</CardTitle>
-            <CardDescription className="uppercase tracking-widest text-[9px] font-extrabold text-zinc-600 dark:text-zinc-550 mt-1">
+            <CardTitle className="text-2xl font-bold text-foreground tracking-tight">Ready to Solve?</CardTitle>
+            <CardDescription className="uppercase tracking-widest text-[9px] font-extrabold text-muted-foreground mt-1">
               Active Challenge: {problemTitle}
             </CardDescription>
           </CardHeader>
 
           <CardContent className="space-y-6 py-6 px-8">
             <div className="grid grid-cols-2 gap-4">
-               <div className="p-4 rounded-2xl bg-zinc-100/50 dark:bg-zinc-900/30 border border-zinc-200 dark:border-white/5 space-y-2 backdrop-blur-sm">
+               <div className="p-4 rounded-2xl bg-muted/40 border border-border space-y-2 backdrop-blur-sm">
                   <div className="flex items-center gap-2 text-primary">
                      <Zap size={14} className="fill-primary/20" />
                      <span className="text-[9px] font-bold uppercase tracking-wider font-mono">Base Score</span>
                   </div>
-                  <p className="text-2xl font-extrabold text-zinc-900 dark:text-white font-mono">100 PTS</p>
+                  <p className="text-2xl font-extrabold text-foreground font-mono">100 PTS</p>
                </div>
-               <div className="p-4 rounded-2xl bg-zinc-100/50 dark:bg-zinc-900/30 border border-zinc-200 dark:border-white/5 space-y-2 backdrop-blur-sm">
+               <div className="p-4 rounded-2xl bg-muted/40 border border-border space-y-2 backdrop-blur-sm">
                   <div className="flex items-center gap-2 text-rose-455">
                      <Lightbulb size={14} className="text-rose-400" />
                      <span className="text-[9px] font-bold uppercase tracking-wider font-mono">Penalty</span>
                   </div>
-                  <p className="text-2xl font-extrabold text-zinc-900 dark:text-white font-mono">-20 <span className="text-xs text-zinc-500 font-medium">/ HINT</span></p>
+                  <p className="text-2xl font-extrabold text-foreground font-mono">-20 <span className="text-xs text-muted-foreground font-medium">/ HINT</span></p>
                </div>
             </div>
 
             <div className="space-y-3">
-               <h4 className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest pl-1 font-mono">Solving Rules</h4>
+               <h4 className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest pl-1 font-mono">Solving Rules</h4>
                <div className="space-y-2">
                   {[
                     { icon: CheckCircle2, text: "Points are deducted for each AI Hint level used.", color: "text-emerald-500" },
                     { icon: Timer, text: "Your total time taken is tracked for performance insights.", color: "text-blue-500" },
                     { icon: ShieldAlert, text: "AI Review and Explanation don't cost points. Use them to learn!", color: "text-amber-500" }
                   ].map((rule, idx) => (
-                    <div key={idx} className="flex items-start gap-3 p-3.5 rounded-2xl bg-zinc-100/50 dark:bg-zinc-900/30 border border-zinc-200 dark:border-white/5 hover:border-zinc-350 dark:hover:border-white/10 transition-colors select-none">
+                    <div key={idx} className="flex items-start gap-3 p-3.5 rounded-2xl bg-muted/40 border border-border hover:border-border/80 transition-colors select-none">
                        <rule.icon size={15} className={cn("mt-0.5 shrink-0", rule.color)} />
-                       <p className="text-xs text-zinc-700 dark:text-zinc-300 font-medium leading-relaxed font-sans">{rule.text}</p>
+                       <p className="text-xs text-foreground/90 font-medium leading-relaxed font-sans">{rule.text}</p>
                     </div>
                   ))}
                </div>

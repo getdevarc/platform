@@ -49,16 +49,16 @@ function CustomModal({
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="w-full max-w-sm rounded-[24px] border border-white/5 bg-zinc-950 p-6 shadow-2xl relative space-y-4 animate-in zoom-in-95 duration-200">
+      <div className="w-full max-w-sm rounded-[24px] border border-border bg-card p-6 shadow-2xl relative space-y-4 animate-in zoom-in-95 duration-200">
         <div className="space-y-2">
-          <h3 className="font-extrabold text-xs uppercase tracking-wider text-white font-sans">{title}</h3>
-          <p className="text-[11px] text-zinc-400 leading-relaxed font-sans">{message}</p>
+          <h3 className="font-extrabold text-xs uppercase tracking-wider text-foreground font-sans">{title}</h3>
+          <p className="text-[11px] text-muted-foreground leading-relaxed font-sans">{message}</p>
         </div>
         <div className="flex items-center justify-end gap-2 pt-2">
           <Button 
             variant="ghost" 
             size="sm" 
-            className="h-8 rounded-xl text-[10px] font-bold uppercase tracking-wider text-zinc-400 hover:text-white"
+            className="h-8 rounded-xl text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground hover:bg-muted"
             onClick={onClose}
           >
             {cancelText}
@@ -530,41 +530,41 @@ export function WorkspaceContent({ problem }: { problem: Problem }) {
             </div>
           </Panel>
 
-          <PanelResizeHandle className="w-1 bg-zinc-200 dark:bg-white/5 hover:bg-primary/45 transition-colors cursor-col-resize shrink-0" />
-
+          <PanelResizeHandle className="w-1 bg-border hover:bg-primary/45 transition-colors cursor-col-resize shrink-0" />
+ 
           {/* Center: Editor & Controls */}
           <Panel id="center" defaultSize={panelSizes.center ?? 55} minSize={30}>
             <div className="flex flex-col h-full relative bg-background overflow-hidden">
               {/* Workspace Toolbar */}
-              <div className="h-12 border-b border-zinc-200 dark:border-white/5 bg-white/80 dark:bg-zinc-950/80 flex items-center justify-between px-5 select-none shrink-0">
+              <div className="h-12 border-b border-border bg-background/80 flex items-center justify-between px-5 select-none shrink-0">
                 <div className="flex flex-1 min-w-0 items-center gap-4 overflow-hidden">
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className="h-8 w-8 rounded-lg hover:bg-zinc-100 dark:hover:bg-white/5 text-zinc-550 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white shrink-0"
+                    className="h-8 w-8 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground shrink-0"
                     onClick={handleBackClick}
                   >
                     <ChevronLeft size={16} />
                   </Button>
-
+ 
                   <select 
                     value={language}
                     onChange={(e) => setLanguage(e.target.value)}
-                    className="bg-zinc-900 border border-white/10 text-[10px] font-bold uppercase tracking-widest text-zinc-300 rounded-lg h-8 px-2.5 outline-none cursor-pointer focus:border-primary/50 transition-all font-mono shrink-0"
+                    className="bg-muted/50 border border-border text-[10px] font-bold uppercase tracking-widest text-foreground rounded-lg h-8 px-2.5 outline-none cursor-pointer focus:border-primary/50 transition-all font-mono shrink-0"
                   >
                     <option value="javascript">Javascript</option>
                     <option value="python">Python</option>
                     <option value="java">Java</option>
                     <option value="cpp">C++</option>
                   </select>
-
-                  <div className="h-4 w-[1px] bg-white/10 shrink-0" />
-
+ 
+                  <div className="h-4 w-[1px] bg-border shrink-0" />
+ 
                   <div className="flex items-center gap-1.5 shrink-0">
                     <Button 
                       variant="ghost" 
                       size="sm" 
-                      className="h-8 gap-1.5 text-[10px] font-bold uppercase tracking-wider text-zinc-400 hover:text-primary active:scale-[0.98] transition-transform rounded-xl hover:bg-primary/5"
+                      className="h-8 gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:text-primary active:scale-[0.98] transition-transform rounded-xl hover:bg-primary/5"
                       onClick={() => handleAiActionClick("hint")}
                     >
                       <Lightbulb size={13} className="text-primary animate-pulse" />
@@ -573,7 +573,7 @@ export function WorkspaceContent({ problem }: { problem: Problem }) {
                     <Button 
                       variant="ghost" 
                       size="sm" 
-                      className="h-8 gap-1.5 text-[10px] font-bold uppercase tracking-wider text-zinc-400 hover:text-purple-400 active:scale-[0.98] transition-transform rounded-xl hover:bg-primary/5"
+                      className="h-8 gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:text-purple-400 active:scale-[0.98] transition-transform rounded-xl hover:bg-primary/5"
                       onClick={() => handleAiActionClick("explanation")}
                     >
                       <Brain size={13} className="text-purple-400" />
@@ -582,32 +582,32 @@ export function WorkspaceContent({ problem }: { problem: Problem }) {
                     <Button 
                       variant="ghost" 
                       size="sm" 
-                      className="h-8 gap-1.5 text-[10px] font-bold uppercase tracking-wider text-zinc-400 hover:text-emerald-450 active:scale-[0.98] transition-transform rounded-xl hover:bg-primary/5"
+                      className="h-8 gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:text-emerald-500 active:scale-[0.98] transition-transform rounded-xl hover:bg-primary/5"
                       onClick={() => handleAiActionClick("review")}
                     >
-                      <Code2 size={13} className="text-emerald-450" />
+                      <Code2 size={13} className="text-emerald-500" />
                       {!isAiOpen && <span>Review</span>}
                     </Button>
                   </div>
-
-                  <div className="h-4 w-[1px] bg-white/10 shrink-0" />
-
-                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-zinc-900/60 border border-white/5 text-[10px] font-mono text-zinc-350 select-none shrink-0">
-                    <Clock size={11} className="text-zinc-500" />
+ 
+                  <div className="h-4 w-[1px] bg-border shrink-0" />
+ 
+                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-muted border border-border text-[10px] font-mono text-muted-foreground select-none shrink-0">
+                    <Clock size={11} className="text-muted-foreground" />
                     <span>{formatTime(timeElapsed)}</span>
                   </div>
-
-                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-zinc-900/60 border border-white/5 text-[10px] font-mono text-zinc-350 select-none shrink-0">
+ 
+                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-muted border border-border text-[10px] font-mono text-muted-foreground select-none shrink-0">
                     <Sparkles size={11} className="text-amber-500 animate-pulse" />
                     <span>Score: {score} / 100</span>
                   </div>
                 </div>
-
+ 
                 <div className="flex items-center gap-2 shrink-0">
                   <Button 
                     variant="ghost" 
                     size="sm" 
-                    className="h-8 gap-1.5 bg-zinc-905 border border-white/5 hover:border-white/10 text-[10px] font-bold uppercase tracking-widest text-zinc-350 hover:text-white rounded-xl active:scale-[0.98] transition-transform shrink-0"
+                    className="h-8 gap-1.5 bg-muted/50 border border-border hover:border-border text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground rounded-xl active:scale-[0.98] transition-transform shrink-0"
                     onClick={() => setIsAiOpen(!isAiOpen)}
                   >
                     <Sparkles size={11} className={cn("text-primary", isAiOpen ? "animate-pulse" : "")} />
@@ -616,7 +616,7 @@ export function WorkspaceContent({ problem }: { problem: Problem }) {
                   <Button 
                     variant="ghost" 
                     size="sm" 
-                    className="h-8 gap-1.5 bg-zinc-900/60 border border-white/5 hover:border-white/10 text-[10px] font-bold uppercase tracking-widest text-zinc-300 hover:text-white rounded-xl active:scale-[0.98] transition-transform shrink-0"
+                    className="h-8 gap-1.5 bg-muted/50 border border-border hover:border-border text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground rounded-xl active:scale-[0.98] transition-transform shrink-0"
                     onClick={handleRun}
                   >
                     <Play size={12} className="text-primary fill-primary" /> Run
@@ -647,73 +647,73 @@ export function WorkspaceContent({ problem }: { problem: Problem }) {
                       <CodeEditor language={language} />
                     </div>
                   </Panel>
-
-                  <PanelResizeHandle className="h-1 bg-zinc-200 dark:bg-white/5 hover:bg-primary/45 transition-colors cursor-row-resize shrink-0" />
-
+ 
+                  <PanelResizeHandle className="h-1 bg-border hover:bg-primary/45 transition-colors cursor-row-resize shrink-0" />
+ 
                   {/* Console */}
                   <Panel id="console" defaultSize={verticalSizes.console ?? 30} minSize={20}>
-                    <div className="h-full flex flex-col bg-card/45 dark:bg-zinc-900/40 border border-zinc-200 dark:border-white/5 overflow-hidden">
-                      <div className="h-10 border-b border-zinc-200 dark:border-[#161616] flex items-center justify-between px-5 bg-zinc-50 dark:bg-black/40 select-none shrink-0">
+                    <div className="h-full flex flex-col bg-card/45 border border-border overflow-hidden">
+                      <div className="h-10 border-b border-border flex items-center justify-between px-5 bg-muted/30 select-none shrink-0">
                         <div className="flex items-center gap-2">
                           <Terminal size={13} className="text-primary" />
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-650 dark:text-zinc-400 font-mono">Console / Test Cases</span>
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground font-mono">Console / Test Cases</span>
                         </div>
                         
                         {testResults && (
-                          <div className="flex items-center gap-4 text-[10px] font-mono text-zinc-400 animate-in fade-in duration-200">
+                          <div className="flex items-center gap-4 text-[10px] font-mono text-muted-foreground animate-in fade-in duration-200">
                             <div className="flex items-center gap-1.5">
                               <span className="h-1.5 w-1.5 rounded-full bg-zinc-500" />
                               <span>Total: {testResults.testCases.length}</span>
                             </div>
                             <div className="flex items-center gap-1.5">
                               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                              <span className="text-emerald-450 font-bold">Passed: {testResults.testCases.filter(c => c.passed).length}</span>
+                              <span className="text-emerald-600 dark:text-emerald-400 font-bold">Passed: {testResults.testCases.filter(c => c.passed).length}</span>
                             </div>
                             <div className="flex items-center gap-1.5">
                               <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
-                              <span className="text-rose-455 font-bold">Failed: {testResults.testCases.filter(c => !c.passed).length}</span>
+                              <span className="text-rose-600 dark:text-rose-455 font-bold">Failed: {testResults.testCases.filter(c => !c.passed).length}</span>
                             </div>
-                            <div className="h-3 w-[1px] bg-white/10" />
+                            <div className="h-3 w-[1px] bg-border" />
                             <div>Time: 12ms</div>
                             <div>Memory: 28.4MB</div>
                           </div>
                         )}
                       </div>
-
+ 
                       <div className="flex-1 p-5 overflow-y-auto scrollbar-thin">
                         {!testResults ? (
                           <div className="max-w-3xl space-y-4">
                             <div className="flex gap-2 select-none h-6 items-center">
-                              <span className="text-[10px] font-extrabold uppercase text-zinc-500 tracking-wider mr-2 font-mono">Sample Cases</span>
+                              <span className="text-[10px] font-extrabold uppercase text-muted-foreground tracking-wider mr-2 font-mono">Sample Cases</span>
                               <Button variant="secondary" size="sm" className="h-6 text-[9px] font-extrabold uppercase bg-primary/10 text-primary border border-primary/20 rounded-lg">Case 1</Button>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               <div className="space-y-1">
-                                <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest select-none font-sans">Input</p>
-                                <pre className="bg-zinc-900/30 border border-white/5 p-3.5 rounded-2xl text-xs font-mono text-zinc-300 overflow-x-auto select-all max-h-24 scrollbar-thin">{problem.example_input || "No input provided"}</pre>
+                                <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest select-none font-sans">Input</p>
+                                <pre className="bg-muted/30 border border-border p-3.5 rounded-2xl text-xs font-mono text-foreground overflow-x-auto select-all max-h-24 scrollbar-thin">{problem.example_input || "No input provided"}</pre>
                               </div>
                               <div className="space-y-1">
-                                <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest select-none font-sans">Expected Output</p>
-                                <pre className="bg-zinc-900/30 border border-white/5 p-3.5 rounded-2xl text-xs font-mono text-emerald-450 overflow-x-auto select-all max-h-24 scrollbar-thin">{problem.example_output || "No output provided"}</pre>
+                                <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest select-none font-sans">Expected Output</p>
+                                <pre className="bg-muted/30 border border-border p-3.5 rounded-2xl text-xs font-mono text-emerald-600 dark:text-emerald-400 overflow-x-auto select-all max-h-24 scrollbar-thin">{problem.example_output || "No output provided"}</pre>
                               </div>
                             </div>
                           </div>
                         ) : (
                           <div className="max-w-3xl space-y-4">
-                            <div className="flex items-center justify-between pb-2 border-b border-white/5">
+                            <div className="flex items-center justify-between pb-2 border-b border-border">
                               <div className="flex items-center gap-2">
-                                <span className="text-[10px] font-extrabold uppercase text-zinc-500 tracking-wider font-mono">Execution Results</span>
+                                <span className="text-[10px] font-extrabold uppercase text-muted-foreground tracking-wider font-mono">Execution Results</span>
                                 <span className={cn(
                                   "text-[9px] font-extrabold uppercase tracking-widest px-2 py-0.5 rounded-lg border",
                                   testResults.status === "accepted" 
-                                    ? "bg-emerald-500/5 text-emerald-400 border-emerald-500/10" 
-                                    : "bg-rose-500/5 text-rose-455 border-rose-500/10"
+                                    ? "bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 border-emerald-500/10" 
+                                    : "bg-rose-500/5 text-rose-600 dark:text-rose-400 border-rose-500/10"
                                 )}>
                                   {testResults.status === "accepted" ? "Accepted" : "Wrong Answer"}
                                 </span>
                               </div>
                             </div>
-
+ 
                             <div className="flex gap-1.5 select-none overflow-x-auto pb-1 scrollbar-none">
                               {testResults.testCases.map((tc, idx) => (
                                 <Button
@@ -723,8 +723,8 @@ export function WorkspaceContent({ problem }: { problem: Problem }) {
                                   className={cn(
                                     "h-7 text-[9px] font-bold uppercase rounded-lg px-3 transition-colors border",
                                     activeCaseIndex === idx
-                                      ? "bg-zinc-900/80 text-white border-white/10"
-                                      : "bg-zinc-955/20 text-zinc-500 border-transparent hover:text-zinc-350"
+                                      ? "bg-secondary text-foreground border-border"
+                                      : "bg-muted/35 text-muted-foreground border-transparent hover:text-foreground"
                                   )}
                                   onClick={() => setActiveCaseIndex(idx)}
                                 >
@@ -736,28 +736,28 @@ export function WorkspaceContent({ problem }: { problem: Problem }) {
                                 </Button>
                               ))}
                             </div>
-
+ 
                             {testResults.testCases[activeCaseIndex] && (
                               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-in fade-in duration-200">
                                 <div className="space-y-1">
-                                  <p className="text-[9px] font-bold text-zinc-550 uppercase tracking-widest select-none font-sans">Input</p>
-                                  <pre className="bg-zinc-900/30 border border-white/5 p-3.5 rounded-2xl text-xs font-mono text-zinc-300 overflow-x-auto select-all max-h-24 scrollbar-thin">
+                                  <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest select-none font-sans">Input</p>
+                                  <pre className="bg-muted/30 border border-border p-3.5 rounded-2xl text-xs font-mono text-foreground overflow-x-auto select-all max-h-24 scrollbar-thin">
                                     {testResults.testCases[activeCaseIndex].input}
                                   </pre>
                                 </div>
                                 <div className="space-y-1">
-                                  <p className="text-[9px] font-bold text-zinc-550 uppercase tracking-widest select-none font-sans">Expected Output</p>
-                                  <pre className="bg-zinc-900/30 border border-white/5 p-3.5 rounded-2xl text-xs font-mono text-emerald-450 overflow-x-auto select-all max-h-24 scrollbar-thin">
+                                  <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest select-none font-sans">Expected Output</p>
+                                  <pre className="bg-muted/30 border border-border p-3.5 rounded-2xl text-xs font-mono text-emerald-600 dark:text-emerald-400 overflow-x-auto select-all max-h-24 scrollbar-thin">
                                     {testResults.testCases[activeCaseIndex].expected}
                                   </pre>
                                 </div>
                                 <div className="space-y-1">
-                                  <p className="text-[9px] font-bold text-zinc-550 uppercase tracking-widest select-none font-sans">Actual Output</p>
+                                  <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest select-none font-sans">Actual Output</p>
                                   <pre className={cn(
                                     "border p-3.5 rounded-2xl text-xs font-mono overflow-x-auto select-all max-h-24 scrollbar-thin",
                                     testResults.testCases[activeCaseIndex].passed
-                                      ? "bg-zinc-900/30 border-white/5 text-emerald-400"
-                                      : "bg-rose-955/10 border-rose-955/20 text-rose-455"
+                                      ? "bg-muted/30 border-border text-emerald-600 dark:text-emerald-400"
+                                      : "bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-455"
                                   )}>
                                     {testResults.testCases[activeCaseIndex].output}
                                   </pre>
@@ -773,14 +773,14 @@ export function WorkspaceContent({ problem }: { problem: Problem }) {
               </div>
             </div>
           </Panel>
-
+ 
           <PanelResizeHandle 
             className={cn(
-              "w-1 bg-zinc-200 dark:bg-white/5 hover:bg-primary/45 transition-colors cursor-col-resize shrink-0",
+              "w-1 bg-border hover:bg-primary/45 transition-colors cursor-col-resize shrink-0",
               !isAiOpen && "pointer-events-none opacity-0 w-0"
             )} 
           />
-
+ 
           {/* Right: AI Panel */}
           <Panel 
             panelRef={aiPanelRef}
@@ -789,7 +789,7 @@ export function WorkspaceContent({ problem }: { problem: Problem }) {
             minSize={20} 
             collapsible
           >
-            <div className="flex flex-col h-full border-l border-zinc-200 dark:border-white/5 bg-background overflow-hidden">
+            <div className="flex flex-col h-full border-l border-border bg-background overflow-hidden">
               <AiPanel />
             </div>
           </Panel>

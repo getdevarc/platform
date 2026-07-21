@@ -31,13 +31,13 @@ export default function SolvePage() {
   if (loading) return (
     <div className="h-screen w-full flex flex-col items-center justify-center bg-background">
        <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
-       <p className="text-zinc-500 font-medium">Preparing Workspace...</p>
+       <p className="text-muted-foreground font-medium">Preparing Workspace...</p>
     </div>
   );
 
   if (!problem) return (
     <div className="h-screen w-full flex items-center justify-center bg-background">
-       <p className="text-zinc-500">Problem not found.</p>
+       <p className="text-muted-foreground">Problem not found.</p>
     </div>
   );
 

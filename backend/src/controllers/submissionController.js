@@ -1,5 +1,6 @@
 const submissionService = require("../services/submissionService");
 const asyncHandler = require("../utils/asyncHandler");
+const cache = require("../utils/cache");
 
 const getLanguageName = (body) => {
   if (body.language) return body.language.toLowerCase();
@@ -19,6 +20,9 @@ exports.createSubmission = asyncHandler(async (req, res) => {
     language: getLanguageName(req.body),
     sessionId: req.body.sessionId
   });
+
+  // Invalidate user dashboard cache
+  await cache.invalidateByTag(`user:${req.user.userId}`);
 
   res.json({
     success: true,
@@ -47,6 +51,9 @@ exports.submitCode = asyncHandler(async (req, res) => {
     language: getLanguageName(req.body),
     sessionId: req.body.sessionId
   });
+
+  // Invalidate user dashboard cache
+  await cache.invalidateByTag(`user:${req.user.userId}`);
 
   res.json({
     success: true,

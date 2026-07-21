@@ -10,7 +10,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   if (isPublicRoute) {
     return (
-      <div className="flex flex-col min-h-screen bg-[#060606]">
+      <div className="flex flex-col min-h-screen bg-background text-foreground">
         {children}
       </div>
     );

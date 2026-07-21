@@ -2,6 +2,8 @@ const authService = require("../services/authService");
 const userRepository = require("../repositories/userRepository");
 const asyncHandler = require("../utils/asyncHandler");
 const emailService = require("../services/emailService");
+const response = require("../utils/response");
+const { ValidationError, AuthenticationError, NotFoundError, ErrorCodes } = require("../utils/errors");
 
 // Banned domains for spam/throwaway emails
 const BANNED_DOMAINS = [
@@ -10,113 +12,98 @@ const BANNED_DOMAINS = [
   "getairmail.com", "burnermail.io"
 ];
 
-exports.sendSignupOTP = asyncHandler(async (req, res) => {
+exports.sendSignupOTP = asyncHandler(async (req, res, next) => {
   const { email } = req.body;
   if (!email) {
-    return res.status(400).json({ success: false, error: "Email is required" });
+    throw new ValidationError("Email is required");
   }
 
   // Validate format
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
-    return res.status(400).json({ success: false, error: "Invalid email format" });
+    throw new ValidationError("Invalid email format");
   }
 
   // Ban throwaway domains
   const domain = email.split("@")[1]?.toLowerCase();
   if (BANNED_DOMAINS.includes(domain)) {
-    return res.status(400).json({ success: false, error: "Registration with temporary email domains is not allowed" });
+    throw new ValidationError("Registration with temporary email domains is not allowed");
   }
 
   // Check if already registered
   const existing = await userRepository.findByEmail(email);
   if (existing) {
-    return res.status(400).json({ success: false, error: "Email is already registered" });
+    throw new AuthenticationError("Email is already registered", ErrorCodes.AUTH_REGISTRATION_FAILED);
   }
 
   await emailService.sendSignupOTP(email);
 
-  res.json({
-    success: true,
-    message: "OTP sent successfully",
-    error: null
-  });
+  return response.success(res, null, "OTP sent successfully");
 });
 
 exports.register = asyncHandler(async (req, res) => {
   const { name, email, password, otp } = req.body;
 
-  if (!email || !password || !otp) {
-    return res.status(400).json({ success: false, error: "Email, password, and verification OTP code are required" });
+  if (!otp) {
+    throw new ValidationError("Verification OTP code is required");
   }
 
   // Verify OTP code
   const isVerified = emailService.verifyOTP(email, otp);
   if (!isVerified) {
-    return res.status(400).json({ success: false, error: "Invalid or expired verification OTP code" });
+    throw new ValidationError("Invalid or expired verification OTP code");
   }
 
   const user = await authService.register({ name, email, password });
-  res.status(201).json({
-    success: true,
-    data: user,
-    error: null
-  });
+  // Send welcome email on successful registration (after user is created in DB)
+  await emailService.sendWelcomeEmail(user.email, name);
+
+  return response.success(res, user, "User registered successfully", 201);
 });
 
 exports.login = asyncHandler(async (req, res) => {
   const token = await authService.login(req.body);
-  res.json({
-    success: true,
-    data: { token },
-    error: null
-  });
+  return response.success(res, { token }, "Login successful");
 });
 
 exports.forgotPassword = asyncHandler(async (req, res) => {
   const { email } = req.body;
   if (!email) {
-    return res.status(400).json({ success: false, error: "Email is required" });
+    throw new ValidationError("Email is required");
   }
 
   const user = await userRepository.findByEmail(email);
   if (!user) {
-    return res.status(404).json({ success: false, error: "No account registered with this email" });
+    throw new NotFoundError("No account registered with this email");
   }
 
-  // Send resetting OTP
-  await emailService.sendSignupOTP(email);
+  // Send resetting OTP from support@getdevarc.com
+  await emailService.sendResetPasswordOTP(email);
 
-  res.json({
-    success: true,
-    message: "Reset code sent to your email",
-    error: null
-  });
+  return response.success(res, null, "Reset code sent to your email");
 });
 
 exports.resetPassword = asyncHandler(async (req, res) => {
   const { email, otp, newPassword } = req.body;
   if (!email || !otp || !newPassword) {
-    return res.status(400).json({ success: false, error: "Email, OTP code, and new password are required" });
+    throw new ValidationError("Email, OTP code, and new password are required");
   }
 
   if (newPassword.length < 8) {
-    return res.status(400).json({ success: false, error: "Password must be at least 8 characters long" });
+    throw new ValidationError("Password must be at least 8 characters long");
   }
 
   // Verify OTP
   const isVerified = emailService.verifyOTP(email, otp);
   if (!isVerified) {
-    return res.status(400).json({ success: false, error: "Invalid or expired OTP code" });
+    throw new ValidationError("Invalid or expired OTP code");
   }
 
   await authService.resetPassword(email, newPassword);
+  // Send password reset confirmation email from support@getdevarc.com
+  await emailService.sendPasswordResetConfirmation(email);
 
-  res.json({
-    success: true,
-    message: "Password reset successful",
-    error: null
-  });
+  return response.success(res, null, "Password reset successful");
 });
 
 exports.updateProfile = asyncHandler(async (req, res) => {
@@ -127,27 +114,15 @@ exports.updateProfile = asyncHandler(async (req, res) => {
   if (target_domain !== undefined) updates.target_domain = target_domain;
 
   const updatedUser = await userRepository.updateUser(req.user.userId, updates);
-  res.json({
-    success: true,
-    data: updatedUser,
-    error: null
-  });
+  return response.success(res, updatedUser, "Profile updated successfully");
 });
 
 exports.me = asyncHandler(async (req, res) => {
   const user = await userRepository.findById(req.user.userId);
 
   if (!user) {
-    return res.status(404).json({
-      success: false,
-      data: null,
-      error: "User not found"
-    });
+    throw new NotFoundError("User not found");
   }
 
-  res.json({
-    success: true,
-    data: user,
-    error: null
-  });
+  return response.success(res, user, "User details retrieved successfully");
 });

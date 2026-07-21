@@ -66,7 +66,7 @@ exports.analyzeResume = async (buffer) => {
 };
 
 /**
- * Generate a specialized roadmap using resume context
+ * Generate a personalized technical roadmap with summary, timeline, and steps
  */
 exports.generatePersonalizedRoadmap = async (userId, profileData, resumeAnalysis) => {
   const skillsStr = resumeAnalysis && Array.isArray(resumeAnalysis.skills) ? resumeAnalysis.skills.join(", ") : "";
@@ -74,7 +74,7 @@ exports.generatePersonalizedRoadmap = async (userId, profileData, resumeAnalysis
   const gapsStr = resumeAnalysis && Array.isArray(resumeAnalysis.career_gaps) ? resumeAnalysis.career_gaps.join(", ") : "";
 
   const prompt = `
-    Create a personalized technical roadmap for a ${profileData.role} targeting ${profileData.target_domain}.
+    Create a personalized technical career roadmap summary, timeline, and high-level milestones list for a ${profileData.role} targeting ${profileData.target_domain}.
     
     Resume Context:
     - Skills: ${skillsStr}
@@ -84,45 +84,44 @@ exports.generatePersonalizedRoadmap = async (userId, profileData, resumeAnalysis
     User Onboarding Answers:
     ${JSON.stringify(profileData.answers)}
 
-    Provide a learning roadmap. You MUST return ONLY a valid STRICT JSON object:
+    Provide a learning roadmap structure. You MUST return ONLY a valid STRICT JSON object:
     {
-      "rawContent": "A detailed markdown description of the learning plan and milestones. Use literal \\\\n for newlines in markdown.",
+      "career_summary": "A 2-3 sentence personalized career transition or progress summary.",
+      "estimated_timeline": "Overall timeline estimate (e.g., \\"3 months\\")",
       "steps": [
         {
-          "id": "1",
           "title": "Title of Step 1",
           "description": "Short description of what to learn in Step 1",
-          "type": "dsa",
-          "status": "completed"
+          "type": "dsa | project | skill",
+          "status": "IN_PROGRESS",
+          "duration": 6
         },
         {
-          "id": "2",
           "title": "Title of Step 2",
           "description": "Short description of what to learn in Step 2",
-          "type": "project",
-          "status": "current"
+          "type": "dsa | project | skill",
+          "status": "NOT_STARTED",
+          "duration": 12
         },
         {
-          "id": "3",
           "title": "Title of Step 3",
           "description": "Short description of what to learn in Step 3",
-          "type": "skill",
-          "status": "locked"
+          "type": "dsa | project | skill",
+          "status": "NOT_STARTED",
+          "duration": 10
         }
       ]
     }
 
-    Set the first step's status to "completed", the second step to "current", and the remaining steps to "locked".
-    Allowed types are: "dsa", "project", "skill".
-    Allowed statuses are: "completed", "current", "locked".
-    CRITICAL: Do not use native unescaped newline control characters inside JSON string values. Escape all newlines properly as literal \\\\n.
-    Do not reply with any chat, introduction, or text outside the JSON. Return only the JSON object.
+    Set the FIRST step status to "IN_PROGRESS" and all subsequent step statuses to "NOT_STARTED".
+    Ensure "duration" is represented as an integer (estimated hours to study/master the step core elements).
+    CRITICAL: Output ONLY valid raw JSON. No markdown wrappers. Escape all quotes.
   `;
 
   const response = await groq.chat.completions.create({
     model: "llama-3.1-8b-instant",
     messages: [
-      { role: "system", content: "You must return a raw JSON object string matching the requested schema. Do not wrap in markdown code blocks. Always escape newlines inside JSON string values as \\\\n." },
+      { role: "system", content: "You must return a raw JSON object string matching the requested schema. Do not wrap in markdown code blocks." },
       { role: "user", content: prompt }
     ]
   });
@@ -151,9 +150,10 @@ exports.generatePersonalizedRoadmap = async (userId, profileData, resumeAnalysis
     }
     // Fallback schema
     return {
-      rawContent: responseText,
+      career_summary: `Targeting transition to ${profileData.target_domain} as a ${profileData.role}`,
+      estimated_timeline: "3 months",
       steps: [
-        { id: "1", title: `Transitioning to ${profileData.target_domain}`, description: "Initial learning modules.", type: "skill", status: "current" }
+        { title: `Transitioning to ${profileData.target_domain}`, description: "Initial learning modules.", type: "skill", status: "IN_PROGRESS", duration: 8 }
       ]
     };
   }

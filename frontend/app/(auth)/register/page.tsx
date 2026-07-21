@@ -49,6 +49,21 @@ export default function RegisterPage() {
   // OTP Validation States
   const [otpSent, setOtpSent] = useState(false);
   const [otpCode, setOtpCode] = useState("");
+  // Resend countdown: seconds remaining (0 = can resend)
+  const [resendCountdown, setResendCountdown] = useState(0);
+
+  // Start a 60-second countdown after OTP is sent
+  useEffect(() => {
+    if (!otpSent) return;
+    setResendCountdown(60);
+    const interval = setInterval(() => {
+      setResendCountdown((prev) => {
+        if (prev <= 1) { clearInterval(interval); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [otpSent]);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -100,18 +115,18 @@ export default function RegisterPage() {
   const handleBack = () => setStep((prev) => (prev - 1) as Step);
 
   const handleSendOTP = async () => {
-    if (!formData.name || !formData.email || !formData.password) {
+    if (!formData.name.trim() || !formData.email.trim() || !formData.password) {
       toast.error("Please fill in name, email, and password first.");
       return;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
+    if (!emailRegex.test(formData.email.trim())) {
       toast.error("Please enter a valid email address.");
       return;
     }
 
-    if (isBotEmail(formData.email)) {
+    if (isBotEmail(formData.email.trim())) {
       toast.error("Spam/temporary emails are not allowed.");
       return;
     }
@@ -124,12 +139,30 @@ export default function RegisterPage() {
     setLoading(true);
     loader.show("Sending verification code to your email...");
     try {
-      await api.post("/auth/send-signup-otp", { email: formData.email });
+      await api.post("/auth/send-signup-otp", { email: formData.email.trim() });
       setOtpSent(true);
+      setOtpCode("");
       toast.success("Verification code sent to your email!");
     } catch (err) {
       const error = err as { response?: { data?: { error?: string } } };
       toast.error(error.response?.data?.error || "Failed to send OTP.");
+    } finally {
+      setLoading(false);
+      loader.hide();
+    }
+  };
+
+  const handleResendOTP = async () => {
+    if (resendCountdown > 0 || loading) return;
+    setOtpCode("");
+    setLoading(true);
+    loader.show("Resending verification code...");
+    try {
+      await api.post("/auth/send-signup-otp", { email: formData.email.trim() });
+      toast.success("New verification code sent!");
+    } catch (err) {
+      const error = err as { response?: { data?: { error?: string } } };
+      toast.error(error.response?.data?.error || "Failed to resend OTP.");
     } finally {
       setLoading(false);
       loader.hide();
@@ -207,10 +240,10 @@ export default function RegisterPage() {
   const SlideIcon = REG_SLIDES[currentSlide].icon;
 
   return (
-    <div className="min-h-screen grid grid-cols-1 lg:grid-cols-12 bg-[#060606] text-white overflow-hidden font-sans">
+    <div className="min-h-screen grid grid-cols-1 lg:grid-cols-12 bg-background text-foreground overflow-hidden font-sans">
       {/* LEFT SIDE (~65%): HERO SLIDESHOW */}
-      <div className="hidden lg:flex lg:col-span-7 relative flex-col justify-between p-12 overflow-hidden border-r border-white/5">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,_#111111,_#060606_80%)] -z-10" />
+      <div className="hidden lg:flex lg:col-span-7 relative flex-col justify-between p-12 overflow-hidden border-r border-border">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,_var(--secondary),_var(--background)_80%)] -z-10" />
         <div className="absolute bottom-[20%] left-[10%] w-[350px] h-[350px] bg-primary/10 rounded-full blur-[140px] -z-10" />
         
         {/* Header Link */}
@@ -218,7 +251,7 @@ export default function RegisterPage() {
           <div className="h-10 w-10 bg-primary rounded-xl flex items-center justify-center text-primary-foreground font-extrabold text-lg shadow-lg shadow-primary/20">
             DA
           </div>
-          <span className="font-bold text-xl tracking-tight bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">
+          <span className="font-bold text-xl tracking-tight bg-gradient-to-r from-foreground to-zinc-500 bg-clip-text text-transparent">
             DevArc
           </span>
           <span className="text-[10px] font-extrabold text-primary uppercase tracking-widest bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full ml-1">
@@ -238,18 +271,18 @@ export default function RegisterPage() {
               className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center"
             >
               <div className="md:col-span-5 space-y-6">
-                <div className="inline-flex items-center justify-center h-12 w-12 rounded-2xl bg-zinc-900 border border-white/10 text-primary mb-2 shadow-xl shadow-black/40">
+                <div className="inline-flex items-center justify-center h-12 w-12 rounded-2xl bg-card border border-border text-primary mb-2 shadow-xl shadow-black/10 dark:shadow-black/40">
                   <SlideIcon size={24} className="text-primary" />
                 </div>
-                <h2 className="text-3xl font-extrabold tracking-tight text-white leading-tight">
+                <h2 className="text-3xl font-extrabold tracking-tight text-foreground leading-tight">
                   {REG_SLIDES[currentSlide].title}
                 </h2>
-                <p className="text-sm text-zinc-450 leading-relaxed">
+                <p className="text-sm text-muted-foreground leading-relaxed">
                   {REG_SLIDES[currentSlide].description}
                 </p>
               </div>
 
-              <div className="md:col-span-7 bg-zinc-950/40 border border-white/5 rounded-2xl p-2 shadow-2xl backdrop-blur-xl max-h-[300px] overflow-hidden flex items-center justify-center">
+              <div className="md:col-span-7 bg-card/40 border border-border rounded-xl p-2 shadow-2xl backdrop-blur-xl max-h-[300px] overflow-hidden flex items-center justify-center">
                 <img 
                   src={REG_SLIDES[currentSlide].image} 
                   alt={REG_SLIDES[currentSlide].title} 
@@ -268,7 +301,7 @@ export default function RegisterPage() {
                 key={idx}
                 onClick={() => setCurrentSlide(idx)}
                 className={`h-1.5 rounded-full transition-all duration-300 ${
-                  currentSlide === idx ? "w-8 bg-primary" : "w-2 bg-zinc-800 hover:bg-zinc-700"
+                  currentSlide === idx ? "w-8 bg-primary" : "w-2 bg-muted hover:bg-zinc-500"
                 }`}
               />
             ))}
@@ -280,7 +313,7 @@ export default function RegisterPage() {
       </div>
 
       {/* RIGHT SIDE (~35%): MULTI-STEP SIGNUP PANEL */}
-      <div className="col-span-1 lg:col-span-5 flex items-center justify-center p-6 relative bg-[#090909] lg:bg-transparent overflow-y-auto max-h-screen">
+      <div className="col-span-1 lg:col-span-5 flex items-center justify-center p-6 relative bg-card lg:bg-transparent overflow-y-auto max-h-screen">
         <div className="absolute top-[20%] right-[10%] w-[250px] h-[250px] bg-primary/10 rounded-full blur-[80px] lg:hidden -z-10" />
 
         <div className="w-full max-w-md space-y-6 py-8">
@@ -288,13 +321,13 @@ export default function RegisterPage() {
             <div className="h-10 w-10 bg-primary/10 border border-primary/20 rounded-xl flex items-center justify-center text-primary font-bold">
               DA
             </div>
-            <h1 className="text-xl font-bold tracking-tight text-white mt-2">Create DevArc Account</h1>
+            <h1 className="text-xl font-bold tracking-tight text-foreground mt-2">Create DevArc Account</h1>
             <p className="text-xs text-zinc-500">Step {step} of 4</p>
           </div>
 
-          <Card className="border border-white/5 bg-zinc-950/40 backdrop-blur-xl shadow-2xl rounded-2xl relative overflow-hidden">
+          <Card className="border border-border bg-card/40 backdrop-blur-xl shadow-2xl rounded-2xl relative overflow-hidden">
             {/* Progress Stepper Bar */}
-            <div className="absolute top-0 left-0 w-full h-[3px] bg-zinc-900">
+            <div className="absolute top-0 left-0 w-full h-[3px] bg-muted">
               <div 
                 className="h-full bg-primary transition-all duration-500 ease-out" 
                 style={{ width: `${(step / 4) * 100}%` }}
@@ -314,32 +347,32 @@ export default function RegisterPage() {
               <div className="pt-2">
                 {step === 1 && (
                   <>
-                    <CardTitle className="text-lg font-bold text-white tracking-tight">Create your account</CardTitle>
-                    <CardDescription className="text-zinc-500 text-xs">
+                    <CardTitle className="text-lg font-bold text-foreground tracking-tight">Create your account</CardTitle>
+                    <CardDescription className="text-muted-foreground text-xs">
                       Build your profile to start your journey with an AI coach.
                     </CardDescription>
                   </>
                 )}
                 {step === 2 && (
                   <>
-                    <CardTitle className="text-lg font-bold text-white tracking-tight">Professional Profile</CardTitle>
-                    <CardDescription className="text-zinc-500 text-xs">
+                    <CardTitle className="text-lg font-bold text-foreground tracking-tight">Professional Profile</CardTitle>
+                    <CardDescription className="text-muted-foreground text-xs">
                       Tell us about your background status and target domain.
                     </CardDescription>
                   </>
                 )}
                 {step === 3 && (
                   <>
-                    <CardTitle className="text-lg font-bold text-white tracking-tight">Career Goals</CardTitle>
-                    <CardDescription className="text-zinc-500 text-xs">
+                    <CardTitle className="text-lg font-bold text-foreground tracking-tight">Career Goals</CardTitle>
+                    <CardDescription className="text-muted-foreground text-xs">
                       Personalize your AI career roadmap logic.
                     </CardDescription>
                   </>
                 )}
                 {step === 4 && (
                   <>
-                    <CardTitle className="text-lg font-bold text-white tracking-tight">Onboard Resume</CardTitle>
-                    <CardDescription className="text-zinc-500 text-xs">
+                    <CardTitle className="text-lg font-bold text-foreground tracking-tight">Onboard Resume</CardTitle>
+                    <CardDescription className="text-muted-foreground text-xs">
                       AI analyzes your skills to diagnose initial target gaps.
                     </CardDescription>
                   </>
@@ -352,22 +385,43 @@ export default function RegisterPage() {
                 <div className="space-y-4 animate-in fade-in duration-300">
                   {otpSent ? (
                     <div className="space-y-3 bg-primary/5 border border-primary/10 p-5 rounded-2xl">
-                      <h4 className="text-xs font-bold text-primary uppercase tracking-wider">Email Verification Required</h4>
-                      <p className="text-[11px] text-zinc-400 leading-normal">
-                        A 6-digit verification code was sent to <strong className="text-white">{formData.email}</strong>. Please enter the code below to complete registration.
-                      </p>
-                      <div className="space-y-1.5 pt-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <h4 className="text-xs font-bold text-primary uppercase tracking-wider">Email Verification Required</h4>
+                          <p className="text-[11px] text-muted-foreground leading-normal mt-1">
+                            A 6-digit code was sent to{" "}
+                            <strong className="text-foreground">{formData.email}</strong>.
+                          </p>
+                        </div>
+                        <span className="text-[9px] bg-amber-500/10 text-amber-600 border border-amber-500/20 rounded-full px-2 py-0.5 font-bold shrink-0 whitespace-nowrap">
+                          Valid 10 min
+                        </span>
+                      </div>
+                      <div className="space-y-1.5 pt-1">
                         <Label className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">OTP Code</Label>
                         <Input 
-                          placeholder="000000" 
+                          placeholder="Enter 6-digit code" 
                           maxLength={6}
-                          className="bg-zinc-900/40 border-white/5 h-11 text-white text-center font-mono tracking-widest text-lg placeholder:text-zinc-700 focus:border-primary/50 transition-colors rounded-xl"
+                          className="bg-background/40 border-border h-12 text-foreground text-center font-mono tracking-[0.4em] text-xl placeholder:text-muted-foreground/40 placeholder:tracking-normal focus:border-primary/50 transition-colors rounded-xl"
                           value={otpCode}
                           onChange={(e) => {
                             const val = e.target.value.replace(/[^0-9]/g, "");
                             setOtpCode(val);
                           }}
                         />
+                        <div className="flex items-center justify-between pt-1">
+                          <p className="text-[10px] text-muted-foreground">
+                            {otpCode.length}/6 digits entered
+                          </p>
+                          <button
+                            type="button"
+                            onClick={handleResendOTP}
+                            disabled={resendCountdown > 0 || loading}
+                            className="text-[10px] font-bold transition-colors disabled:text-muted-foreground/50 enabled:text-primary enabled:hover:underline"
+                          >
+                            {resendCountdown > 0 ? `Resend in ${resendCountdown}s` : "Resend Code"}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ) : (
@@ -376,7 +430,7 @@ export default function RegisterPage() {
                         <Label className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider pl-0.5">Full Name</Label>
                         <Input 
                           placeholder="Aman Jha" 
-                          className="bg-zinc-900/40 border-white/5 h-11 text-white placeholder:text-zinc-650 focus:border-primary/50 transition-colors rounded-xl text-sm"
+                          className="bg-background/40 border-border h-11 text-foreground placeholder:text-zinc-500 focus:border-primary/50 transition-colors rounded-xl text-sm"
                           value={formData.name}
                           onChange={(e) => setFormData({...formData, name: e.target.value})}
                         />
@@ -386,7 +440,7 @@ export default function RegisterPage() {
                         <Input 
                           type="email" 
                           placeholder="name@example.com" 
-                          className="bg-zinc-900/40 border-white/5 h-11 text-white placeholder:text-zinc-650 focus:border-primary/50 transition-colors rounded-xl text-sm"
+                          className="bg-background/40 border-border h-11 text-foreground placeholder:text-zinc-500 focus:border-primary/50 transition-colors rounded-xl text-sm"
                           value={formData.email}
                           onChange={(e) => setFormData({...formData, email: e.target.value})}
                         />
@@ -396,7 +450,7 @@ export default function RegisterPage() {
                         <Input 
                           type="password" 
                           placeholder="••••••••" 
-                          className="bg-zinc-900/40 border-white/5 h-11 text-white placeholder:text-zinc-650 focus:border-primary/50 transition-colors rounded-xl text-sm"
+                          className="bg-background/40 border-border h-11 text-foreground placeholder:text-zinc-500 focus:border-primary/50 transition-colors rounded-xl text-sm"
                           value={formData.password}
                           onChange={(e) => setFormData({...formData, password: e.target.value})}
                         />
@@ -412,7 +466,7 @@ export default function RegisterPage() {
                                 {getPasswordStrength(formData.password).label}
                               </span>
                             </div>
-                            <div className="h-1.5 w-full bg-zinc-900 rounded-full overflow-hidden">
+                            <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
                               <div 
                                 className={cn("h-full transition-all duration-300", getPasswordStrength(formData.password).color)}
                                 style={{ width: `${getPasswordStrength(formData.password).score}%` }}
@@ -443,7 +497,7 @@ export default function RegisterPage() {
                             "flex flex-col items-center gap-2 p-4 rounded-xl border transition-all text-center",
                             formData.role === opt.id 
                               ? "bg-primary/10 border-primary text-primary" 
-                              : "bg-white/5 border-white/5 text-zinc-400 hover:bg-white/10"
+                              : "bg-secondary/40 border-border text-muted-foreground hover:bg-secondary/70"
                           )}
                         >
                           <opt.icon size={20} className={formData.role === opt.id ? "text-primary" : "text-zinc-500"} />
@@ -465,7 +519,7 @@ export default function RegisterPage() {
                             "py-2 px-1 rounded-lg border text-[9px] font-extrabold uppercase transition-all tracking-wider text-center",
                             formData.targetDomain === domain 
                               ? "bg-primary border-primary text-primary-foreground"
-                              : "bg-white/5 border-white/5 text-zinc-400 hover:border-zinc-700"
+                              : "bg-secondary/40 border-border text-muted-foreground hover:border-zinc-500"
                           )}
                         >
                           {domain}
@@ -479,22 +533,22 @@ export default function RegisterPage() {
               {step === 3 && (
                 <div className="space-y-4 animate-in fade-in duration-300">
                   <div className="space-y-1">
-                    <Label className="text-[10px] text-zinc-450 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                    <Label className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider flex items-center gap-1.5">
                       <Target size={12} className="text-primary" /> What is your primary 3-month goal?
                     </Label>
                     <Input 
                       placeholder="e.g., Land a SDE-1 role at a startup" 
-                      className="bg-zinc-900/40 border-white/5 h-11 text-white placeholder:text-zinc-650 focus:border-primary/50 transition-colors rounded-xl text-sm"
+                      className="bg-background/40 border-border h-11 text-foreground placeholder:text-zinc-500 focus:border-primary/50 transition-colors rounded-xl text-sm"
                       value={formData.answers.goal}
                       onChange={(e) => setFormData({...formData, answers: {...formData.answers, goal: e.target.value}})}
                     />
                   </div>
                   
                   <div className="space-y-1">
-                    <Label className="text-[10px] text-zinc-450 font-bold uppercase tracking-wider">Target Dream Company</Label>
+                    <Label className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Target Dream Company</Label>
                     <Input 
                       placeholder="e.g., Google, Stripe, or Early Stage AI startup" 
-                      className="bg-zinc-900/40 border-white/5 h-11 text-white placeholder:text-zinc-650 focus:border-primary/50 transition-colors rounded-xl text-sm"
+                      className="bg-background/40 border-border h-11 text-foreground placeholder:text-zinc-500 focus:border-primary/50 transition-colors rounded-xl text-sm"
                       value={formData.answers.dream_company}
                       onChange={(e) => setFormData({...formData, answers: {...formData.answers, dream_company: e.target.value}})}
                     />
@@ -512,7 +566,7 @@ export default function RegisterPage() {
                   <div 
                     className={cn(
                       "border border-dashed rounded-2xl p-6 flex flex-col items-center gap-3 transition-all cursor-pointer",
-                      resume ? "bg-emerald-500/5 border-emerald-500/20" : "bg-zinc-900/20 border-white/5 hover:border-primary/20"
+                      resume ? "bg-emerald-500/5 border-emerald-500/20" : "bg-secondary/20 border-border hover:border-primary/20"
                     )}
                     onClick={() => document.getElementById("resume-upload")?.click()}
                   >
@@ -527,13 +581,13 @@ export default function RegisterPage() {
                     />
                     <div className={cn(
                       "h-12 w-12 rounded-xl flex items-center justify-center shadow-lg",
-                      resume ? "bg-emerald-500 text-white" : "bg-zinc-800 text-zinc-550"
+                      resume ? "bg-emerald-500 text-white" : "bg-secondary text-muted-foreground"
                     )}>
                       {resume ? <CheckCircle2 size={24} /> : <Upload size={24} />}
                     </div>
                     <div>
-                      <h4 className="font-bold text-xs text-white mb-0.5">{resume ? resume.name : "Select Resume PDF"}</h4>
-                      <p className="text-[10px] text-zinc-500">Drag and drop or click to upload</p>
+                      <h4 className="font-bold text-xs text-foreground mb-0.5">{resume ? resume.name : "Select Resume PDF"}</h4>
+                      <p className="text-[10px] text-zinc-505 text-zinc-500">Drag and drop or click to upload</p>
                     </div>
                   </div>
                   <p className="text-[9px] text-zinc-550 uppercase font-bold tracking-wider">Optional: Skip if you prefer full manual setup.</p>
@@ -541,12 +595,12 @@ export default function RegisterPage() {
               )}
             </CardContent>
 
-            <CardFooter className="bg-black/10 p-5 border-t border-white/5 gap-2">
+            <CardFooter className="bg-secondary/10 p-5 border-t border-border gap-2">
               {step > 1 && (
                 <Button 
                   type="button"
                   variant="outline" 
-                  className="h-11 w-11 shrink-0 rounded-xl border-white/10 bg-zinc-900/20 hover:bg-zinc-900/40 text-zinc-400 hover:text-white"
+                  className="h-11 w-11 shrink-0 rounded-xl border-border bg-secondary/20 hover:bg-secondary/40 text-muted-foreground hover:text-foreground"
                   onClick={handleBack}
                   disabled={loading}
                 >
@@ -560,7 +614,7 @@ export default function RegisterPage() {
                     <Button
                       type="button"
                       variant="outline"
-                      className="h-11 px-4 rounded-xl border-white/10 bg-zinc-900/20 hover:bg-zinc-900/40 text-zinc-400 hover:text-white"
+                      className="h-11 px-4 rounded-xl border-border bg-secondary/20 hover:bg-secondary/40 text-muted-foreground hover:text-foreground"
                       onClick={() => setOtpSent(false)}
                       disabled={loading}
                     >

@@ -58,7 +58,7 @@ export function CodeEditor({
   };
 
   return (
-    <div className="h-full w-full border-y border-zinc-200 dark:border-white/5 bg-background">
+    <div className="h-full w-full border-y border-border bg-background">
       <Editor
         height="100%"
         language={language}

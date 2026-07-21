@@ -28,6 +28,9 @@ exports.login = async ({ email, password }) => {
     throw new Error("Invalid credentials");
   }
 
+  // Update last login telemetry timestamp
+  await userRepository.updateUser(user.id, { last_login_at: new Date() });
+
   const token = jwt.sign(
     { userId: user.id },
     process.env.JWT_SECRET,

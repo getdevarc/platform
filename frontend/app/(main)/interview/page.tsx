@@ -615,25 +615,25 @@ export default function InterviewPage() {
     return text.split("\n").map((line, idx) => {
       let formatted = line;
       formatted = formatted.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
-      formatted = formatted.replace(/`(.*?)`/g, "<code class='px-1.5 py-0.5 bg-zinc-800 rounded font-mono text-xs text-primary'>$1</code>");
+      formatted = formatted.replace(/`(.*?)`/g, "<code class='px-1.5 py-0.5 bg-muted rounded font-mono text-xs text-primary'>$1</code>");
 
       if (formatted.startsWith("### ")) {
-        return <h3 key={idx} className="text-base font-bold my-3 text-white border-b border-white/5 pb-1" dangerouslySetInnerHTML={{ __html: formatted.slice(4) }} />;
+        return <h3 key={idx} className="text-base font-bold my-3 text-foreground border-b border-border pb-1" dangerouslySetInnerHTML={{ __html: formatted.slice(4) }} />;
       }
       if (formatted.startsWith("## ")) {
-        return <h2 key={idx} className="text-lg font-bold my-4 text-white" dangerouslySetInnerHTML={{ __html: formatted.slice(3) }} />;
+        return <h2 key={idx} className="text-lg font-bold my-4 text-foreground" dangerouslySetInnerHTML={{ __html: formatted.slice(3) }} />;
       }
       if (formatted.startsWith("# ")) {
-        return <h1 key={idx} className="text-2xl font-bold my-5 text-white" dangerouslySetInnerHTML={{ __html: formatted.slice(2) }} />;
+        return <h1 key={idx} className="text-2xl font-bold my-5 text-foreground" dangerouslySetInnerHTML={{ __html: formatted.slice(2) }} />;
       }
       if (formatted.trim().startsWith("- ") || formatted.trim().startsWith("* ")) {
         const content = formatted.trim().slice(2);
-        return <li key={idx} className="ml-4 list-disc text-sm text-zinc-350 my-1.5" dangerouslySetInnerHTML={{ __html: content }} />;
+        return <li key={idx} className="ml-4 list-disc text-sm text-muted-foreground my-1.5" dangerouslySetInnerHTML={{ __html: content }} />;
       }
       if (formatted.trim() === "") {
         return <div key={idx} className="h-3" />;
       }
-      return <p key={idx} className="text-sm text-zinc-355 leading-relaxed my-2" dangerouslySetInnerHTML={{ __html: formatted }} />;
+      return <p key={idx} className="text-sm text-foreground/90 leading-relaxed my-2" dangerouslySetInnerHTML={{ __html: formatted }} />;
     });
   };
 
@@ -652,8 +652,8 @@ export default function InterviewPage() {
             {/* Tracks Column */}
             <div className="md:col-span-8 space-y-6">
               <div>
-                <h3 className="text-sm font-bold text-zinc-900 dark:text-white uppercase tracking-widest mb-1.5 font-sans">1. Select technical track</h3>
-                <p className="text-xs text-zinc-500 mb-4 leading-normal">Choose one of the tracks matching your target career domain to initiate room context generation.</p>
+                <h3 className="text-sm font-bold text-foreground uppercase tracking-widest mb-1.5 font-sans">1. Select technical track</h3>
+                <p className="text-xs text-muted-foreground mb-4 leading-normal">Choose one of the tracks matching your target career domain to initiate room context generation.</p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -675,8 +675,8 @@ export default function InterviewPage() {
                         className={cn(
                           "cursor-pointer relative overflow-hidden transition-all duration-300",
                           isSelected 
-                            ? "border-primary/40 bg-zinc-950/80 shadow-lg shadow-primary/5 ring-1 ring-primary/20" 
-                            : "bg-white dark:bg-zinc-950/20 border-zinc-200 dark:border-white/5 hover:border-zinc-350 dark:hover:border-zinc-800"
+                            ? "border-primary/40 bg-muted/80 shadow-lg shadow-primary/5 ring-1 ring-primary/20" 
+                            : "bg-card border-border hover:border-border/80"
                         )}
                       >
                         {isSelected && (
@@ -694,14 +694,14 @@ export default function InterviewPage() {
             {/* Config Column */}
             <div className="md:col-span-4 space-y-6">
               <div>
-                <h3 className="text-sm font-bold text-zinc-900 dark:text-white uppercase tracking-widest mb-1.5 font-sans">2. Setup room options</h3>
-                <p className="text-xs text-zinc-500 mb-4 leading-normal">Customize interview parameters for targeting system evaluation behaviors.</p>
+                <h3 className="text-sm font-bold text-foreground uppercase tracking-widest mb-1.5 font-sans">2. Setup room options</h3>
+                <p className="text-xs text-muted-foreground mb-4 leading-normal">Customize interview parameters for targeting system evaluation behaviors.</p>
               </div>
 
-              <div className="bg-card/45 dark:bg-zinc-950/40 border border-zinc-200 dark:border-white/5 p-6 rounded-2xl backdrop-blur-md space-y-6">
+              <div className="bg-card border border-border p-6 rounded-2xl backdrop-blur-md space-y-6">
                 {/* Difficulty */}
                 <div className="space-y-3">
-                  <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block select-none">Difficulty level</span>
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block select-none">Difficulty level</span>
                   <div className="grid grid-cols-3 gap-2">
                     {(["Easy", "Medium", "Hard"] as const).map((diff) => (
                       <button
@@ -712,7 +712,7 @@ export default function InterviewPage() {
                           "py-2 text-[10px] uppercase tracking-wider font-extrabold rounded-xl border transition-all cursor-pointer select-none",
                           difficulty === diff
                             ? "bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/10"
-                            : "bg-zinc-100 dark:bg-zinc-900 border-zinc-200 dark:border-white/5 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
+                            : "bg-muted border-border text-muted-foreground hover:text-foreground"
                         )}
                       >
                         {diff}
@@ -724,7 +724,7 @@ export default function InterviewPage() {
                 {/* Duration */}
                 <div className="space-y-3">
                   <div className="flex justify-between items-center select-none">
-                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Duration constraint</span>
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Duration constraint</span>
                     <span className="text-xs font-mono font-bold text-primary">{duration} Mins</span>
                   </div>
                   <input
@@ -734,9 +734,9 @@ export default function InterviewPage() {
                     step={15}
                     value={duration}
                     onChange={(e) => setDuration(Number(e.target.value))}
-                    className="w-full accent-primary bg-zinc-200 dark:bg-zinc-800 h-1.5 rounded-lg appearance-none cursor-pointer"
+                    className="w-full accent-primary bg-muted h-1.5 rounded-lg appearance-none cursor-pointer"
                   />
-                  <div className="flex justify-between text-[9px] text-zinc-550 dark:text-zinc-500 font-bold font-mono select-none">
+                  <div className="flex justify-between text-[9px] text-muted-foreground font-bold font-mono select-none">
                     <span>15 MIN</span>
                     <span>45 MIN</span>
                     <span>90 MIN</span>
@@ -745,11 +745,11 @@ export default function InterviewPage() {
 
                 {/* Target Metric focal point */}
                 <div className="space-y-3">
-                  <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block select-none">Primary AI Metric</span>
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block select-none">Primary AI Metric</span>
                   <select
                     value={targetMetric}
                     onChange={(e) => setTargetMetric(e.target.value as "Performance" | "Clean Code" | "Scalability")}
-                    className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 text-xs text-zinc-900 dark:text-zinc-300 rounded-xl p-3 outline-none cursor-pointer focus:border-primary/50 transition-all font-mono"
+                    className="w-full bg-muted border border-border text-xs text-foreground rounded-xl p-3 outline-none cursor-pointer focus:border-primary/50 transition-all font-mono"
                   >
                     <option value="Performance">⚡ Performance Optimization</option>
                     <option value="Clean Code">✨ Code quality & readability</option>
@@ -757,7 +757,7 @@ export default function InterviewPage() {
                   </select>
                 </div>
 
-                <div className="h-px bg-zinc-200 dark:bg-white/5 my-4" />
+                <div className="h-px bg-border my-4" />
 
                 {/* Action CTA */}
                 <Button
@@ -791,7 +791,7 @@ export default function InterviewPage() {
     <div className="flex h-[calc(100vh-64px)] bg-background text-foreground overflow-hidden select-none">
       
       {/* Sidebar Questions Tracker Panel */}
-      <div className="w-16 bg-card border-r border-zinc-200 dark:border-[#161616] flex flex-col items-center py-4 space-y-4 shrink-0 z-30">
+      <div className="w-16 bg-card border-r border-border flex flex-col items-center py-4 space-y-4 shrink-0 z-30">
          <Badge className="bg-primary/20 text-primary border-none text-[8px] font-bold px-1.5 uppercase font-mono mb-2 select-none">Mock</Badge>
          
          <button 
@@ -800,7 +800,7 @@ export default function InterviewPage() {
              "h-10 w-10 rounded-xl flex items-center justify-center border transition-all cursor-pointer",
              selectedCompletedQuestion === null 
                ? "bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/20" 
-               : "bg-zinc-150 dark:bg-zinc-900 border-zinc-200 dark:border-white/5 text-zinc-600 dark:text-zinc-400 hover:text-zinc-905 dark:hover:text-white"
+               : "bg-muted border-border text-muted-foreground hover:text-foreground"
            )}
            title="Active Sandbox Workspace"
          >
@@ -832,15 +832,15 @@ export default function InterviewPage() {
       <div className="flex-1 flex overflow-hidden">
         {selectedCompletedQuestion ? (
           /* Completed Question Read-Only Review Panel */
-          <div className="flex-1 p-8 bg-card/90 dark:bg-zinc-950/80 overflow-y-auto space-y-8 select-text">
-             <div className="flex items-center justify-between border-b border-zinc-200 dark:border-white/5 pb-4">
+          <div className="flex-1 p-8 bg-card overflow-y-auto space-y-8 select-text">
+             <div className="flex items-center justify-between border-b border-border pb-4">
                 <div>
-                   <h2 className="text-xl font-bold text-zinc-900 dark:text-white tracking-tight">{selectedCompletedQuestion.title}</h2>
-                   <p className="text-[9px] text-zinc-550 uppercase tracking-widest font-bold mt-1">Mock Interview submission review</p>
+                   <h2 className="text-xl font-bold text-foreground tracking-tight">{selectedCompletedQuestion.title}</h2>
+                   <p className="text-[9px] text-muted-foreground uppercase tracking-widest font-bold mt-1">Mock Interview submission review</p>
                 </div>
                 <Button 
                    variant="outline" 
-                   className="border-zinc-200 dark:border-white/10 text-xs font-bold rounded-xl h-9 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white bg-zinc-100 dark:bg-zinc-900/50 hover:bg-zinc-200 dark:hover:bg-zinc-900"
+                   className="border-border text-xs font-bold rounded-xl h-9 text-foreground hover:text-foreground bg-muted hover:bg-muted/80"
                    onClick={() => setSelectedCompletedQuestion(null)}
                 >
                    Back to Active Workspace
@@ -848,15 +848,15 @@ export default function InterviewPage() {
              </div>
 
              <div className="grid grid-cols-3 gap-6">
-                <div className="p-4 bg-zinc-100/50 dark:bg-zinc-900/30 border border-zinc-200 dark:border-white/5 rounded-2xl">
+                <div className="p-4 bg-muted/40 border border-border rounded-2xl">
                    <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Time Taken</span>
-                   <span className="text-sm font-bold text-zinc-900 dark:text-white font-mono">{formatTime(selectedCompletedQuestion.timeTaken)}</span>
+                   <span className="text-sm font-bold text-foreground font-mono">{formatTime(selectedCompletedQuestion.timeTaken)}</span>
                 </div>
-                <div className="p-4 bg-zinc-100/50 dark:bg-zinc-900/30 border border-zinc-200 dark:border-white/5 rounded-2xl">
+                <div className="p-4 bg-muted/40 border border-border rounded-2xl">
                    <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Status</span>
                    <span className="text-sm font-bold text-emerald-500 font-sans uppercase">Submitted</span>
                 </div>
-                <div className="p-4 bg-zinc-100/50 dark:bg-zinc-900/30 border border-zinc-200 dark:border-white/5 rounded-2xl">
+                <div className="p-4 bg-muted/40 border border-border rounded-2xl">
                    <span className="text-[9px] font-bold text-zinc-705 dark:text-[#fafafa] uppercase tracking-widest block mb-1">Test Cases passed</span>
                    <span className="text-sm font-bold text-emerald-500 font-mono">
                       {selectedCompletedQuestion.evaluation?.testCases?.filter((t: TestCaseResult) => t.passed).length || 0} / {selectedCompletedQuestion.evaluation?.testCases?.length || 3} Passed
@@ -866,14 +866,14 @@ export default function InterviewPage() {
 
              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-3">
-                   <h3 className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">Question Details</h3>
-                   <div className="p-5 bg-zinc-100/30 dark:bg-zinc-900/10 border border-zinc-200 dark:border-white/5 rounded-2xl max-h-[350px] overflow-y-auto min-h-[300px]">
+                   <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Question Details</h3>
+                   <div className="p-5 bg-muted/20 border border-border rounded-2xl max-h-[350px] overflow-y-auto min-h-[300px]">
                       {renderFormattedText(selectedCompletedQuestion.questionText)}
                    </div>
                 </div>
                 <div className="space-y-3">
-                   <h3 className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest font-sans">Submitted Code ({selectedCompletedQuestion.language})</h3>
-                   <div className="border border-zinc-200 dark:border-white/5 rounded-2xl overflow-hidden min-h-[300px] bg-background">
+                   <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest font-sans">Submitted Code ({selectedCompletedQuestion.language})</h3>
+                   <div className="border border-border rounded-2xl overflow-hidden min-h-[300px] bg-background">
                       <Editor
                         height="300px"
                         theme={theme === "dark" ? "vs-dark" : "light"}
@@ -889,14 +889,14 @@ export default function InterviewPage() {
           /* Active Interactive Workspace Grid Space */
           <>
             {/* Left Panel: Chat Interface */}
-            <div className="w-[32%] flex flex-col border-r border-zinc-200 dark:border-[#161616] bg-card/65 dark:bg-zinc-950/50 shrink-0">
-               <div className="p-4 border-b border-zinc-200 dark:border-white/5 flex items-center justify-between bg-zinc-50 dark:bg-black/40">
+            <div className="w-[32%] flex flex-col border-r border-border bg-card shrink-0 font-sans">
+               <div className="p-4 border-b border-border flex items-center justify-between bg-muted/40 font-sans">
                   <div className="flex items-center gap-3">
                      <div className="h-8 w-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
                         <Bot size={18} className="text-primary" />
                      </div>
                      <div className="flex flex-col">
-                        <p className="text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-wider font-sans">AI Interviewer</p>
+                        <p className="text-xs font-bold text-foreground uppercase tracking-wider font-sans">AI Interviewer</p>
                         <div className="flex items-center gap-1.5 mt-0.5">
                            <span className="relative flex h-1.5 w-1.5">
                               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -941,7 +941,7 @@ export default function InterviewPage() {
 
                <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-hide select-text">
                   {/* Active Question Title & Text Card */}
-                  <div className="p-5 rounded-2xl bg-card dark:bg-zinc-950/60 border border-zinc-200 dark:border-white/5 space-y-3 relative overflow-hidden">
+                  <div className="p-5 rounded-2xl bg-muted/40 border border-border space-y-3 relative overflow-hidden">
                      <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 blur-[40px] -z-10" />
                      <div className="flex items-center justify-between">
                         <h3 className="text-xs font-black text-primary uppercase tracking-wider font-sans">Question {activeIndex + 1}</h3>
@@ -970,8 +970,8 @@ export default function InterviewPage() {
                        <div className={cn(
                          "p-4 rounded-2xl text-xs leading-relaxed border shadow-lg",
                          msg.role === "assistant" 
-                           ? "bg-zinc-100/50 dark:bg-zinc-900/60 text-zinc-800 dark:text-zinc-200 border-zinc-200 dark:border-white/5" 
-                           : "bg-primary/5 text-zinc-900 dark:text-white border-primary/20 dark:border-primary/25 shadow-md shadow-primary/5"
+                           ? "bg-muted/40 text-foreground border-border" 
+                           : "bg-primary/5 text-foreground border-primary/20 shadow-md shadow-primary/5"
                        )}>
                          {msg.role === "assistant" ? renderFormattedText(msg.content) : msg.content}
                        </div>
@@ -979,10 +979,10 @@ export default function InterviewPage() {
                   ))}
                   {loading && (
                     <div className="flex gap-3 animate-pulse">
-                       <div className="h-8 w-8 rounded-xl bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center border border-zinc-200 dark:border-white/5 text-zinc-600 dark:text-zinc-400">
+                       <div className="h-8 w-8 rounded-xl bg-muted flex items-center justify-center border border-border text-muted-foreground">
                           <Bot size={16} className="animate-spin" />
                        </div>
-                       <div className="p-4 rounded-2xl bg-zinc-100/40 dark:bg-zinc-950/40 text-zinc-600 dark:text-zinc-400 text-xs italic border border-zinc-200 dark:border-white/5">
+                       <div className="p-4 rounded-2xl bg-muted/30 text-muted-foreground text-xs italic border border-border">
                           Interviewer is analyzing solution...
                        </div>
                     </div>
@@ -990,11 +990,11 @@ export default function InterviewPage() {
                   <div ref={chatEndRef} />
                </div>
 
-               <div className="p-6 bg-zinc-50 dark:bg-black/40 border-t border-zinc-200 dark:border-white/5">
+               <div className="p-6 bg-muted/45 border-t border-border">
                   <div className="relative group">
                      <textarea 
                        placeholder="Explain your thought process..."
-                       className="w-full bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-200 dark:border-white/10 rounded-2xl p-4 pr-12 text-xs text-zinc-900 dark:text-white placeholder:text-zinc-500 focus:border-primary/55 hover:border-zinc-300 dark:hover:border-white/20 transition-all outline-none resize-none h-24"
+                       className="w-full bg-background border border-border rounded-2xl p-4 pr-12 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary/55 hover:border-primary/20 transition-all outline-none resize-none h-24"
                        value={input}
                        onChange={(e) => setInput(e.target.value)}
                        onKeyDown={(e) => {
@@ -1019,16 +1019,16 @@ export default function InterviewPage() {
             {/* Right Panel: Code Sandbox Editor & Test Panel */}
       <div className="flex-1 flex flex-col bg-background relative">
          {/* Sandbox Header */}
-         <div className="h-14 border-b border-zinc-200 dark:border-white/5 flex items-center justify-between px-6 bg-zinc-50 dark:bg-zinc-900/60 z-10">
+          <div className="h-14 border-b border-border flex items-center justify-between px-6 bg-muted/45 z-10">
             <div className="flex items-center gap-3">
-               <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] font-sans">Solution Sandbox</span>
-               <div className="h-4 w-px bg-zinc-200 dark:bg-white/10" />
+               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] font-sans">Solution Sandbox</span>
+               <div className="h-4 w-px bg-border animate-pulse" />
                
                {/* Language Dropdown Select */}
                <select
                  value={language}
                  onChange={(e) => handleLanguageChange(e.target.value as keyof typeof boilerplates)}
-                 className="bg-zinc-800/80 text-[11px] text-zinc-300 border border-white/10 rounded-lg px-2.5 py-1 outline-none cursor-pointer focus:border-primary/50 transition-all font-mono"
+                 className="bg-muted text-[11px] text-foreground border border-border rounded-lg px-2.5 py-1 outline-none cursor-pointer focus:border-primary/50 transition-all font-mono"
                  disabled={isQuestionLocked}
                >
                   <option value="javascript">JavaScript</option>
@@ -1056,7 +1056,7 @@ export default function InterviewPage() {
                  className={cn(
                    "h-8 text-[10px] font-bold uppercase tracking-widest px-4 rounded-lg flex items-center gap-2 transition-all cursor-pointer font-sans",
                    isQuestionLocked 
-                     ? "bg-zinc-800 text-zinc-550 border border-zinc-700 cursor-not-allowed" 
+                     ? "bg-muted text-muted-foreground border border-border cursor-not-allowed" 
                      : "bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-500 shadow-lg shadow-emerald-500/10"
                  )}
                  onClick={handleSubmitSolution}
@@ -1111,24 +1111,24 @@ export default function InterviewPage() {
          <div 
            onMouseDown={startDrag}
            className={cn(
-             "h-1.5 cursor-ns-resize bg-white/5 hover:bg-primary/60 transition-all z-35 relative flex items-center justify-center",
+             "h-1.5 cursor-ns-resize bg-border hover:bg-primary/60 transition-all z-35 relative flex items-center justify-center",
              isDragging ? "bg-primary/80" : ""
            )}
          >
-           <div className="h-0.5 w-6 rounded bg-zinc-700/60" />
+           <div className="h-0.5 w-6 rounded bg-muted-foreground/30" />
          </div>
 
           {/* Sandbox Test Runner Output */}
-          <div className="border-t border-white/5 bg-zinc-950 flex flex-col relative z-20 overflow-hidden" style={{ height: `${panelHeight}px` }}>
-             <div className="h-10 border-b border-[#161616] flex items-center justify-between px-6 bg-black/40 select-none">
+          <div className="border-t border-border bg-card flex flex-col relative z-20 overflow-hidden" style={{ height: `${panelHeight}px` }}>
+             <div className="h-10 border-b border-border flex items-center justify-between px-6 bg-muted/40 select-none">
                 <div className="flex items-center gap-2">
                    <Play size={12} className="text-primary fill-primary" />
-                   <span className="text-[10px] font-bold text-zinc-400 tracking-widest font-mono uppercase">Execution Report</span>
+                   <span className="text-[10px] font-bold text-muted-foreground tracking-widest font-mono uppercase">Execution Report</span>
                 </div>
                 
                 {testResults && (
                    <div className="flex items-center gap-2 animate-in fade-in duration-300">
-                      <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider font-mono">VERDICT:</span>
+                      <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider font-mono">VERDICT:</span>
                       <Badge 
                         className={cn(
                            "text-[9px] font-extrabold uppercase px-2.5 py-0.5 border shadow-sm rounded-lg",
@@ -1145,7 +1145,7 @@ export default function InterviewPage() {
              
              <div className="flex-1 flex overflow-hidden">
                 {/* Test Case Indicator Tabs */}
-                <div className="w-1/4 border-r border-[#161616] flex flex-col divide-y divide-[#161616] overflow-y-auto scrollbar-hide select-none">
+                <div className="w-1/4 border-r border-border flex flex-col divide-y divide-border overflow-y-auto scrollbar-hide select-none">
                   {testResults ? (
                     testResults.testCases.map((tc, idx) => (
                        <button
@@ -1153,7 +1153,7 @@ export default function InterviewPage() {
                          onClick={() => setActiveTestTab(idx)}
                          className={cn(
                             "p-3 text-left transition-all hover:bg-white/5 flex items-center justify-between outline-none cursor-pointer border-l-2 text-xs",
-                            activeTestTab === idx ? "bg-zinc-900 border-primary text-white" : "border-transparent text-zinc-400 hover:text-white"
+                            activeTestTab === idx ? "bg-muted border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
                          )}
                        >
                           <span className="text-[10px] font-extrabold font-mono">Test Case {idx + 1}</span>
@@ -1165,7 +1165,7 @@ export default function InterviewPage() {
                        </button>
                     ))
                   ) : (
-                    <div className="p-4 text-center text-[10px] text-zinc-600 font-bold font-mono">
+                    <div className="p-4 text-center text-[10px] text-muted-foreground font-bold font-mono">
                        No Runs Logged
                     </div>
                   )}
@@ -1177,7 +1177,7 @@ export default function InterviewPage() {
                      <div className="space-y-4 animate-in fade-in duration-300">
                         <div className="p-3.5 bg-primary/5 border border-primary/20 rounded-xl gap-2.5 flex items-start">
                            <Sparkles size={14} className="text-primary mt-0.5 shrink-0" />
-                           <div className="text-xs text-zinc-300 leading-relaxed font-sans">
+                           <div className="text-xs text-foreground/90 leading-relaxed font-sans">
                               <span className="text-primary uppercase tracking-widest text-[9px] font-extrabold block mb-0.5 select-none font-sans">AI Mentor Feedback</span> 
                               &quot;{testResults.feedback}&quot;
                            </div>
@@ -1186,14 +1186,14 @@ export default function InterviewPage() {
                         <div className="grid grid-cols-2 gap-4">
                            <div className="space-y-1">
                               <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest select-none font-sans">Input</span>
-                              <pre className="p-3 bg-zinc-900/40 border border-white/5 rounded-xl text-xs font-mono text-zinc-300 overflow-x-auto select-all max-h-16 scrollbar-thin">
+                              <pre className="p-3 bg-muted/40 border border-border rounded-xl text-xs font-mono text-foreground overflow-x-auto select-all max-h-16 scrollbar-thin">
                                  {testResults.testCases[activeTestTab]?.input}
                               </pre>
                            </div>
                            
                            <div className="space-y-1">
                               <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest select-none font-sans">Expected Output</span>
-                              <pre className="p-3 bg-zinc-900/40 border border-white/5 rounded-xl text-xs font-mono text-zinc-300 overflow-x-auto select-all max-h-16 scrollbar-thin">
+                              <pre className="p-3 bg-muted/40 border border-border rounded-xl text-xs font-mono text-foreground overflow-x-auto select-all max-h-16 scrollbar-thin">
                                  {testResults.testCases[activeTestTab]?.expected}
                               </pre>
                            </div>
@@ -1212,10 +1212,10 @@ export default function InterviewPage() {
                         </div>
                      </div>
                   ) : (
-                     <div className="h-full flex flex-col items-center justify-center text-center text-zinc-550 space-y-2 select-none">
-                        <Play size={20} className="text-zinc-[650] animate-pulse" />
-                        <p className="text-xs font-sans text-zinc-400">Write your implementation. Switch languages and click <strong className="text-primary font-bold">Run Tests</strong> to validate your solution.</p>
-                        <p className="text-[10px] text-zinc-650 font-mono">Dynamic AI evaluation handles normal, edge case, and performance inputs.</p>
+                     <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground space-y-2 select-none">
+                        <Play size={20} className="text-muted-foreground animate-pulse" />
+                        <p className="text-xs font-sans text-muted-foreground/80">Write your implementation. Switch languages and click <strong className="text-primary font-bold">Run Tests</strong> to validate your solution.</p>
+                        <p className="text-[10px] text-muted-foreground/60 font-mono">Dynamic AI evaluation handles normal, edge case, and performance inputs.</p>
                      </div>
                   )}
                 </div>
@@ -1229,7 +1229,7 @@ export default function InterviewPage() {
       {/* Evaluation Results Overlay */}
       {mode === "evaluation" && session?.evaluation && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 backdrop-blur-md bg-black/85 animate-in fade-in duration-500 select-text">
-           <Card className="w-full max-w-2xl bg-zinc-950/90 border border-white/10 shadow-2xl relative overflow-hidden rounded-3xl">
+           <Card className="w-full max-w-2xl bg-card border border-border shadow-2xl relative overflow-hidden rounded-3xl">
               {/* Background gradient lights */}
               <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-primary via-purple-500 to-emerald-500" />
               <div className="absolute -top-12 -right-12 w-48 h-48 bg-primary/10 blur-[80px] rounded-full -z-10" />
@@ -1239,7 +1239,7 @@ export default function InterviewPage() {
                  <div className="mx-auto h-16 w-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-4 shadow-lg shadow-primary/5 animate-pulse">
                     <Trophy size={30} className="text-primary" />
                  </div>
-                 <CardTitle className="text-2xl font-bold text-white tracking-tight font-sans">Interview Completed</CardTitle>
+                 <CardTitle className="text-2xl font-bold text-foreground tracking-tight font-sans">Interview Completed</CardTitle>
                  <CardDescription className="uppercase tracking-widest text-[9px] font-extrabold text-zinc-500 font-mono mt-1">Diagnostic AI Report & Breakdown</CardDescription>
               </CardHeader>
               
@@ -1252,7 +1252,7 @@ export default function InterviewPage() {
                       { label: "Communication Flow", value: session.evaluation.communicationScore, color: "text-primary", bg: "bg-primary/10 border-primary/15" }
                     ].map((s) => (
                       <div key={s.label} className={`p-4.5 rounded-2xl border text-center ${s.bg} backdrop-blur-sm relative overflow-hidden group`}>
-                         <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider mb-2.5 truncate font-sans">{s.label.split(" ")[0]}</p>
+                         <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider mb-2.5 truncate font-sans">{s.label.split(" ")[0]}</p>
                          <p className={cn("text-2xl font-black font-mono tracking-tight", s.color)}>{s.value}%</p>
                          <div className="w-12 h-1 bg-white/5 mx-auto mt-3 rounded-full overflow-hidden">
                             <div className={`h-full ${s.color.replace('text-', 'bg-')}`} style={{ width: `${s.value}%` }} />
@@ -1267,7 +1267,7 @@ export default function InterviewPage() {
                     <h4 className="text-xs font-black text-primary uppercase tracking-widest mb-2 flex items-center gap-2 font-mono">
                        <Sparkles size={14} className="animate-spin" style={{ animationDuration: '4s' }} /> Overall Mentor Diagnostic
                     </h4>
-                    <p className="text-xs text-zinc-300 leading-relaxed italic font-sans">
+                    <p className="text-xs text-muted-foreground leading-relaxed italic font-sans">
                        &quot;{session.evaluation.overallFeedback}&quot;
                     </p>
                  </div>
@@ -1280,7 +1280,7 @@ export default function InterviewPage() {
                        </p>
                        <ul className="space-y-2">
                           {session.evaluation.strengths && session.evaluation.strengths.map((s: string, idx: number) => (
-                            <li key={idx} className="text-xs text-zinc-350 flex items-start gap-1.5">
+                            <li key={idx} className="text-xs text-muted-foreground flex items-start gap-1.5">
                                <span className="text-emerald-500/80 select-none font-bold mt-0.5">•</span>
                                <span className="font-sans leading-relaxed">{s}</span>
                             </li>
@@ -1290,12 +1290,12 @@ export default function InterviewPage() {
                     
                     <div className="space-y-3">
                        <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-2 font-sans select-none">
-                          <XCircle size={13} className="text-zinc-550" /> Target Improvements
+                          <XCircle size={13} className="text-muted-foreground" /> Target Improvements
                        </p>
                        <ul className="space-y-2">
                           {session.evaluation.weaknesses && session.evaluation.weaknesses.map((w: string, idx: number) => (
-                            <li key={idx} className="text-xs text-zinc-400 flex items-start gap-1.5">
-                               <span className="text-zinc-600 select-none font-bold mt-0.5">•</span>
+                            <li key={idx} className="text-xs text-muted-foreground flex items-start gap-1.5">
+                               <span className="text-muted-foreground select-none font-bold mt-0.5">•</span>
                                <span className="font-sans leading-relaxed">{w}</span>
                             </li>
                           ))}
@@ -1303,9 +1303,9 @@ export default function InterviewPage() {
                     </div>
                  </div>
 
-                 <div className="flex items-center justify-between pt-6 border-t border-white/5 select-none">
+                 <div className="flex items-center justify-between pt-6 border-t border-border select-none">
                     <div className="flex items-center gap-4">
-                       <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest font-mono">Verdict</p>
+                       <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest font-mono">Verdict</p>
                        <Badge className={cn(
                           "px-4.5 h-8 rounded-xl font-bold font-sans text-xs flex items-center justify-center border-none shadow-lg transition-all",
                           session.evaluation.verdict === "STRONG HIRE" ? "bg-emerald-555 text-white bg-emerald-600 shadow-emerald-555/15" :
@@ -1319,7 +1319,7 @@ export default function InterviewPage() {
                     <div className="flex items-center gap-2">
                        <Button 
                          variant="outline"
-                         className="rounded-xl h-10 gap-2 border-white/10 bg-zinc-900/50 hover:bg-zinc-900 text-zinc-300 hover:text-white"
+                         className="rounded-xl h-10 gap-2 border-border bg-muted/50 hover:bg-muted/80 text-foreground hover:text-foreground"
                          onClick={downloadReport}
                        >
                           <Download size={13} />
@@ -1328,7 +1328,7 @@ export default function InterviewPage() {
                        
                        <Button 
                          variant="outline"
-                         className="rounded-xl h-10 px-4 bg-zinc-900 border-white/10 hover:bg-zinc-800 text-zinc-305 hover:text-white font-bold"
+                         className="rounded-xl h-10 px-4 bg-muted border-border hover:bg-muted/80 text-foreground hover:text-foreground font-bold"
                          onClick={handleReattempt}
                        >
                           Attempt Again
