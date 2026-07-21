@@ -23,8 +23,27 @@ const app = express();
 
 // 1. Security configurations
 app.use(helmet());
+const allowedOrigins = new Set([
+  "http://localhost:3000",
+  "https://getdevarc.com",
+  "https://www.getdevarc.com"
+]);
+
+if (process.env.CORS_ORIGIN) {
+  process.env.CORS_ORIGIN.split(",")
+    .map(origin => origin.trim())
+    .filter(Boolean)
+    .forEach(origin => allowedOrigins.add(origin));
+}
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || "http://localhost:3000",
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.has(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error("Not allowed by CORS"));
+  },
   optionsSuccessStatus: 200
 }));
 
