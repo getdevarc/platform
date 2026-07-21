@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, Sparkles, Code2, Compass, Speech } from "lucide-react";
+import { Loader2, Sparkles, Code2, Compass, Speech, ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useLoaderStore } from "@/store/useLoaderStore";
@@ -33,6 +33,9 @@ const SLIDES = [
     description: "Simulate live interactive technical interviews with dynamic questions, live waveform indicators, and immediate diagnostic review scorecards.",
   },
 ];
+
+const landingUrl = process.env.NEXT_PUBLIC_LANDING_URL || 
+  (process.env.NODE_ENV === "development" ? "http://localhost:3000" : "https://getdevarc.com");
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -147,6 +150,15 @@ export default function LoginPage() {
         <div className="absolute top-[20%] right-[10%] w-[250px] h-[250px] bg-primary/10 rounded-full blur-[80px] lg:hidden -z-10" />
 
         <div className="w-full max-w-sm space-y-6 z-10">
+          <div className="flex items-center">
+            <Link 
+              href={landingUrl} 
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 font-medium group"
+            >
+              <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
+              Back to Homepage
+            </Link>
+          </div>
           {/* Logo header for mobile only */}
           <div className="flex flex-col items-center text-center space-y-2 lg:hidden">
             <div className="h-12 w-12 bg-primary rounded-xl flex items-center justify-center text-primary-foreground font-bold text-xl shadow-lg shadow-primary/20">

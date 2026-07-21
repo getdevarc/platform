@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isPublicRoute = pathname === "/";
+  const isPublicRoute = pathname === "/" || pathname === "/privacy" || pathname === "/terms";
 
   if (isPublicRoute) {
     return (
