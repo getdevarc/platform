@@ -1,7 +1,8 @@
 "use client";
 
 import { BaseHero } from "@/components/shared/DesignSystem";
-import { Scale, Users, Award, AlertTriangle, FileText } from "lucide-react";
+import { Scale, Users, Award, AlertTriangle, FileText, ArrowLeft } from "lucide-react";
+import Link from "next/link";
 
 export default function TermsPage() {
   const sections = [
@@ -29,6 +30,16 @@ export default function TermsPage() {
 
   return (
     <div className="flex-1 overflow-y-auto bg-background text-foreground p-6 md:p-8 space-y-8 font-sans">
+      <div className="flex items-center">
+        <Link 
+          href="/" 
+          className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 font-medium group"
+        >
+          <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
+          Back
+        </Link>
+      </div>
+
       <BaseHero
         badgeText="Terms & Rules"
         title="Terms of Service"

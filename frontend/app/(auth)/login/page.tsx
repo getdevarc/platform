@@ -34,6 +34,9 @@ const SLIDES = [
   },
 ];
 
+const landingUrl = process.env.NEXT_PUBLIC_LANDING_URL || 
+  (process.env.NODE_ENV === "development" ? "http://localhost:3000" : "https://getdevarc.com");
+
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -149,7 +152,7 @@ export default function LoginPage() {
         <div className="w-full max-w-sm space-y-6 z-10">
           <div className="flex items-center">
             <Link 
-              href="https://getdevarc.com" 
+              href={landingUrl} 
               className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 font-medium group"
             >
               <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
