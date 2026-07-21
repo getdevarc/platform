@@ -36,7 +36,7 @@ import { useLoaderStore } from "@/store/useLoaderStore";
 import { useThemeTransition } from "@/hooks/useThemeTransition";
 import { canAccessAdminPortal } from "@/lib/permissions";
 
-const landingUrl = process.env.NEXT_PUBLIC_LANDING_URL || "http://localhost:3000";
+const landingUrl = process.env.NEXT_PUBLIC_LANDING_URL || "https://getdevarc.com";
 
 export function Navbar() {
   const pathname = usePathname();

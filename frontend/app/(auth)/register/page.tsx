@@ -317,6 +317,15 @@ export default function RegisterPage() {
         <div className="absolute top-[20%] right-[10%] w-[250px] h-[250px] bg-primary/10 rounded-full blur-[80px] lg:hidden -z-10" />
 
         <div className="w-full max-w-md space-y-6 py-8">
+          <div className="flex items-center">
+            <Link 
+              href="https://getdevarc.com" 
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 font-medium group"
+            >
+              <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
+              Back to Homepage
+            </Link>
+          </div>
           <div className="flex flex-col items-center text-center space-y-1 lg:hidden">
             <div className="h-10 w-10 bg-primary/10 border border-primary/20 rounded-xl flex items-center justify-center text-primary font-bold">
               DA
